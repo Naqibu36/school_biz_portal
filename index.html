@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سکول اور بزنس پورٹل - مکمل POS</title>
+<style>
+body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+.container { width: 90%; margin: auto; padding: 20px; }
+h1, h2 { color: #2e7d32; text-align: center; }
+input, button { padding: 8px; margin: 5px 0; }
+button { background-color: #388e3c; color: white; border: none; cursor: pointer; border-radius: 5px; }
+button:hover { opacity: 0.9; }
+.table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+.table th, .table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+.table th { background-color: #2e7d32; color: white; }
+.edit-btn, .delete-btn { margin: 0 5px; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+.edit-btn { background-color: #fbc02d; color: black; border: none; }
+.delete-btn { background-color: #d32f2f; color: white; border: none; }
+.upload-btn { background-color: #1976d2; color: white; border: none; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>سکول اور بزنس پورٹل</h1>
+
+<!-- Admin Login -->
+<div id="adminLoginDiv">
+<h2>ایڈمن لاگ ان</h2>
+<input type="text" id="adminUsername" placeholder="Admin Username"><br>
+<input type="password" id="adminPassword" placeholder="Admin Password"><br>
+<button onclick="adminLogin()">لاگ ان کریں</button>
+<p id="adminLoginMsg" style="color:red;"></p>
+</div>
+
+<!-- Customer Login / Register -->
+<div id="customerDiv" class="hidden">
+<h2>کسٹمر رجسٹریشن / لاگ ان</h2>
+<input type="text" id="custName" placeholder="نام"><br>
+<input type="email" id="custEmail" placeholder="ای میل"><br>
+<input type="password" id="custPass" placeholder="پاسورڈ"><br>
+<button onclick="registerCustomer()">رجسٹر کریں</button>
+<button onclick="loginCustomer()">لاگ ان کریں</button>
+<button onclick="forgotPassword()">پاسورڈ بھول گئے؟</button>
+<p id="custMsg" style="color:red;"></p>
+</div>
+
+<!-- Business Section -->
+<div id="businessDiv" class="hidden">
+<h2>بزنس ڈیٹا</h2>
+<table class="table" id="customerTable">
+<tr>
+<th>نام</th>
+<th>ای میل</th>
+<th>پاسورڈ</th>
+<th>تصویر اپلوڈ</th>
+<th>ایڈیٹ</th>
+<th>ڈیلیٹ</th>
+</tr>
+</table>
+<br>
+<button onclick="logout()">لاگ آؤٹ</button>
+</div>
+</div>
+
+<script>
+// ----- Admin Setup -----
+const adminUser = "admin";
+const adminPass = "admin123";
+
+// ----- Data Storage -----
+let customers = JSON.parse(localStorage.getItem("customers") || "[]");
+let loggedInUser = null;
+let isAdmin = false;
+
+// ----- Admin Login -----
+function adminLogin() {
+  const username = document.getElementById("adminUsername").value;
+  const password = document.getElementById("adminPassword").value;
+  if(username === adminUser && password === adminPass) {
+    isAdmin = true;
+    loggedInUser = "Admin";
+    document.getElementById("adminLoginDiv").classList.add("hidden");
+    document.getElementById("customerDiv").classList.remove("hidden");
+    document.getElementById("businessDiv").classList.remove("hidden");
+    renderTable();
+  } else {
+    document.getElementById("adminLoginMsg").innerText = "یوزر نیم یا پاسورڈ غلط ہے!";
+  }
+}
+
+// ----- Customer Functions -----
+function registerCustomer() {
+  const name = document.getElementById("custName").value;
+  const email = document.getElementById("custEmail").value;
+  const pass = document.getElementById("custPass").value;
+  if(customers.some(c => c.email === email)) {
+    document.getElementById("custMsg").innerText = "یہ ای میل پہلے سے موجود ہے";
+    return;
+  }
+  customers.push({name, email, pass, image: ""});
+  localStorage.setItem("customers", JSON.stringify(customers));
+  document.getElementById("custMsg").innerText = "رجسٹریشن کامیاب ہے!";
+  renderTable();
+}
+
+function loginCustomer() {
+  const email = document.getElementById("custEmail").value;
+  const pass = document.getElementById("custPass").value;
+  const user = customers.find(c => c.email === email && c.pass === pass);
+  if(user) {
+    loggedInUser = user.email;
+    document.getElementById("custMsg").innerText = "لاگ ان کامیاب!";
+    document.getElementById("businessDiv").classList.remove("hidden");
+    renderTable();
+  } else {
+    document.getElementById("custMsg").innerText = "ای میل یا پاسورڈ غلط ہے!";
+  }
+}
+
+function forgotPassword() {
+  const email = prompt("اپنا ای میل درج کریں:");
+  const user = customers.find(c => c.email === email);
+  if(user) {
+    const newPass = prompt("نیا پاسورڈ درج کریں:");
+    user.pass = newPass;
+    localStorage.setItem("customers", JSON.stringify(customers));
+    alert("پاسورڈ کامیابی سے تبدیل ہو گیا");
+  } else {
+    alert("ای میل نہیں ملی");
+  }
+}
+
+// ----- Render Table -----
+function renderTable() {
+  const table = document.getElementById("customerTable");
+  table.innerHTML = `
+    <tr>
+      <th>نام</th>
+      <th>ای میل</th>
+      <th>پاسورڈ</th>
+      <th>تصویر اپلوڈ</th>
+      <th>ایڈیٹ</th>
+      <th>ڈیلیٹ</th>
+    </tr>
+  `;
+  customers.forEach((c, index) => {
+    if(!isAdmin && c.email !== loggedInUser) return;
+    const row = table.insertRow();
+    row.insertCell(0).innerText = c.name;
+    row.insertCell(1).innerText = c.email;
+    row.insertCell(2).innerText = c.pass;
+    
+    // Image Upload
+    const imgCell = row.insertCell(3);
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.onchange = (e) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        c.image = reader.result;
+        localStorage.setItem("customers", JSON.stringify(customers));
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    };
+    imgCell.appendChild(fileInput);
+    
+    // Edit Button
+    const editCell = row.insertCell(4);
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-btn";
+    editBtn.innerText = "ایڈیٹ";
+    editBtn.onclick = () => {
+      const newName = prompt("نیا نام درج کریں:", c.name);
+      const newPass = prompt("نیا پاسورڈ درج کریں:", c.pass);
+      if(newName) c.name = newName;
+      if(newPass) c.pass = newPass;
+      localStorage.setItem("customers", JSON.stringify(customers));
+      renderTable();
+    };
+    editCell.appendChild(editBtn);
+    
+    // Delete Button
+    const delCell = row.insertCell(5);
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete-btn";
+    delBtn.innerText = "ڈیلیٹ";
+    delBtn.onclick = () => {
+      if(confirm("کیا آپ ڈیلیٹ کرنا چاہتے ہیں؟")) {
+        customers.splice(index,1);
+        localStorage.setItem("customers", JSON.stringify(customers));
+        renderTable();
+      }
+    };
+    delCell.appendChild(delBtn);
+  });
+}
+
+// ----- Logout -----
+function logout() {
+  loggedInUser = null;
+  isAdmin = false;
+  document.getElementById("adminLoginDiv").classList.remove("hidden");
+  document.getElementById("customerDiv").classList.add("hidden");
+  document.getElementById("businessDiv").classList.add("hidden");
+}
+</script>
+</body>
+</html>
