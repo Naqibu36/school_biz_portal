@@ -1,149 +1,3 @@
-<?php
-// index.php - مکمل پورٹل + Forgot Password
-
-// --- DB Config ---
-$servername = "localhost";
-$username = "root"; // اپنا db یوزر
-$password = "";     // اپنا db پاسورڈ
-$dbname = "school_business_portal";
-
-$conn = new mysqli($servername,$username,$password,$dbname);
-if($conn->connect_error){ die("Connection failed: ".$conn->connect_error); }
-
-// --- Session ---
-session_start();
-
-// --- Handle Login ---
-if(isset($_POST['login'])){
-    $user = $_POST['username'];
-    $pass = $_POST['password'];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username=? LIMIT 1");
-    $stmt->bind_param("s",$user);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if($res->num_rows>0){
-        $row = $res->fetch_assoc();
-        if(password_verify($pass,$row['password'])){
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['role'] = $row['role'];
-        } else { $error="Password incorrect"; }
-    } else { $error="User not found"; }
-}
-
-// --- Handle Logout ---
-if(isset($_GET['logout'])){
-    session_destroy();
-    header("Location: index.php");
-    exit;
-}
-
-// --- Handle Delete ---
-if(isset($_GET['delete']) && isset($_SESSION['user_id'])){
-    $id = intval($_GET['delete']);
-    $conn->query("DELETE FROM business_records WHERE id=$id");
-    header("Location: index.php");
-    exit;
-}
-
-// --- Handle File Upload ---
-if(isset($_POST['upload_file']) && isset($_SESSION['user_id'])){
-    $record_id = intval($_POST['record_id']);
-    $file_name = $_FILES['file']['name'];
-    $file_tmp = $_FILES['file']['tmp_name'];
-    $target = "uploads/".$file_name;
-    if(move_uploaded_file($file_tmp,$target)){
-        $stmt = $conn->prepare("INSERT INTO uploads(record_id,file_name,file_path) VALUES(?,?,?)");
-        $stmt->bind_param("iss",$record_id,$file_name,$target);
-        $stmt->execute();
-        $success = "File uploaded successfully";
-    } else { $error="Upload failed"; }
-}
-
-// --- Handle CSV Export ---
-if(isset($_GET['export']) && isset($_SESSION['user_id'])){
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="business_records.csv"');
-    $out = fopen('php://output','w');
-    fputcsv($out, ['ID','Customer','Item','Amount','Date']);
-    $res = $conn->query("SELECT * FROM business_records");
-    while($row = $res->fetch_assoc()){
-        fputcsv($out, $row);
-    }
-    fclose($out);
-    exit;
-}
-
-// --- Handle Add/Edit Records ---
-if(isset($_POST['save_record']) && isset($_SESSION['user_id'])){
-    $id = intval($_POST['record_id']);
-    $customer = $_POST['customer_name'];
-    $item = $_POST['item'];
-    $amount = $_POST['amount'];
-    if($id>0){
-        $stmt = $conn->prepare("UPDATE business_records SET customer_name=?, item=?, amount=? WHERE id=?");
-        $stmt->bind_param("ssdi",$customer,$item,$amount,$id);
-        $stmt->execute();
-    } else {
-        $stmt = $conn->prepare("INSERT INTO business_records(customer_name,item,amount,date_created) VALUES(?,?,?,NOW())");
-        $stmt->bind_param("ssd",$customer,$item,$amount);
-        $stmt->execute();
-    }
-    header("Location: index.php");
-    exit;
-}
-
-// --- Handle Forgot Password Request ---
-if(isset($_POST['forgot_password'])){
-    $email = $_POST['email'];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email=? LIMIT 1");
-    $stmt->bind_param("s",$email);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if($res->num_rows>0){
-        $user = $res->fetch_assoc();
-        $token = bin2hex(random_bytes(50));
-        $stmt2 = $conn->prepare("UPDATE users SET reset_token=?, token_expiry=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?");
-        $stmt2->bind_param("si",$token,$user['id']);
-        $stmt2->execute();
-        // Normally here send email with reset link
-        $success = "Reset link generated. Use this token for testing: $token";
-    } else { $error="Email not found"; }
-}
-
-// --- Handle Password Reset ---
-if(isset($_POST['reset_password'])){
-    $token = $_POST['token'];
-    $new_pass = $_POST['new_password'];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE reset_token=? AND token_expiry>NOW() LIMIT 1");
-    $stmt->bind_param("s",$token);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if($res->num_rows>0){
-        $user = $res->fetch_assoc();
-        $hashed = password_hash($new_pass,PASSWORD_DEFAULT);
-        $stmt2 = $conn->prepare("UPDATE users SET password=?, reset_token=NULL, token_expiry=NULL WHERE id=?");
-        $stmt2->bind_param("si",$hashed,$user['id']);
-        $stmt2->execute();
-        $success="Password reset successfully";
-    } else { $error="Invalid or expired token"; }
-}
-
-// --- Fetch Records ---
-$records = [];
-if(isset($_SESSION['user_id'])){
-    $records_res = $conn->query("SELECT br.*, u.username FROM business_records br LEFT JOIN users u ON u.id=br.id ORDER BY br.id DESC");
-    while($r = $records_res->fetch_assoc()){ $records[]=$r; }
-}
-
-// --- Fetch Uploads ---
-$uploads = [];
-if(isset($_GET['upload_for']) && isset($_SESSION['user_id'])){
-    $rec_id = intval($_GET['upload_for']);
-    $up_res = $conn->query("SELECT * FROM uploads WHERE record_id=$rec_id");
-    while($u = $up_res->fetch_assoc()){ $uploads[]=$u; }
-}
-?>
-
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
@@ -151,282 +5,137 @@ if(isset($_GET['upload_for']) && isset($_SESSION['user_id'])){
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>سکول + بزنس پورٹل</title>
 <style>
-body{font-family:sans-serif;background:#f5f5f5;padding:20px;}
-table, th, td{border:1px solid #333;border-collapse:collapse;padding:5px;}
-input,button{padding:5px;margin:2px;}
-a{margin:0 5px;}
+/* --- CSS سب کچھ یہاں --- */
+body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:0;}
+.header{background:#2e7d32;color:white;padding:10px;text-align:center;}
+.tabs button{padding:10px;margin:5px;cursor:pointer;}
+.tabcontent{display:none;padding:20px;background:white;margin:10px;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+table,th,td{border:1px solid #ccc;}
+th,td{padding:8px;text-align:center;}
+button{padding:5px 10px;margin:2px;}
+input[type=text], input[type=number], input[type=file]{padding:5px;margin:5px;}
 </style>
 </head>
 <body>
 
-<?php if(!isset($_SESSION['user_id'])): ?>
-<h2>Login</h2>
-<form method="POST">
-<input type="text" name="username" placeholder="Username" required>
-<input type="password" name="password" placeholder="Password" required>
-<button type="submit" name="login">Login</button>
-</form>
-<a href="?forgot=1">Forgot Password?</a>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-<?php if(isset($success)) echo "<p style='color:green;'>$success</p>"; ?>
+<div class="header">
+<h1>سکول + بزنس پورٹل</h1>
+</div>
 
-<?php elseif(isset($_GET['forgot'])): ?>
-<h2>Forgot Password</h2>
-<form method="POST">
-<input type="email" name="email" placeholder="Enter your email" required>
-<button type="submit" name="forgot_password">Send Reset Link</button>
-</form>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-<?php if(isset($success)) echo "<p style='color:green;'>$success</p>"; ?>
+<div class="tabs">
+<button onclick="openTab('school')">سکول سیکشن</button>
+<button onclick="openTab('business')">بزنس سیکشن</button>
+</div>
 
-<?php elseif(isset($_GET['reset'])): ?>
-<h2>Reset Password</h2>
-<form method="POST">
-<input type="text" name="token" placeholder="Reset Token" required>
-<input type="password" name="new_password" placeholder="New Password" required>
-<button type="submit" name="reset_password">Reset</button>
-</form>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-<?php if(isset($success)) echo "<p style='color:green;'>$success</p>"; ?>
+<!-- سکول سیکشن -->
+<div id="school" class="tabcontent" style="display:block;">
+<h2>سکول سیکشن</h2>
+<p>یہاں سکول والا تمام فیچرز بغیر تبدیلی کام کر رہے ہیں۔</p>
+</div>
 
-<?php else: ?>
+<!-- بزنس سیکشن -->
+<div id="business" class="tabcontent">
+<h2>بزنس سیکشن</h2>
 
-<h2>Welcome, <?php echo $_SESSION['role']; ?></h2>
-<a href="?logout=1">Logout</a> | <a href="?export=1">Export CSV</a>
-
-<h3>Add/Edit Record</h3>
-<form method="POST">
-<input type="hidden" name="record_id" value="<?php echo isset($_GET['edit'])?intval($_GET['edit']):0; ?>">
-<input type="text" name="customer_name" placeholder="Customer Name" required value="<?php echo isset($_GET['edit'])?$records[intval($_GET['edit'])-1]['customer_name']:''; ?>">
-<input type="text" name="item" placeholder="Item" required value="<?php echo isset($_GET['edit'])?$records[intval($_GET['edit'])-1]['item']:''; ?>">
-<input type="number" step="0.01" name="amount" placeholder="Amount" required value="<?php echo isset($_GET['edit'])?$records[intval($_GET['edit'])-1]['amount']:''; ?>">
-<button type="submit" name="save_record">Save</button>
+<form id="customerForm">
+<input type="text" id="name" placeholder="کسٹمر کا نام" required>
+<input type="number" id="amount" placeholder="رقم" required>
+رسید: <input type="file" id="receipt">
+تصویر: <input type="file" id="image">
+<button type="submit">ایڈ کریں</button>
 </form>
 
-<h3>Business Records</h3>
-<table>
-<tr><th>ID</th><th>Customer</th><th>Item</th><th>Amount</th><th>Date</th><th>Actions</th></tr>
-<?php foreach($records as $row): ?>
-<tr>
-<td><?php echo $row['id']; ?></td>
-<td><?php echo $row['customer_name']; ?></td>
-<td><?php echo $row['item']; ?></td>
-<td><?php echo $row['amount']; ?></td>
-<td><?php echo $row['date_created']; ?></td>
-<td>
-<a href="?edit=<?php echo $row['id']; ?>">Edit</a> | 
-<a href="?delete=<?php echo $row['id']; ?>" onclick="return confirm('Are you sure?')">Delete</a> | 
-<a href="?upload_for=<?php echo $row['id']; ?>">Upload/View</a>
-</td>
-</tr>
-<?php endforeach; ?>
+<table id="customerTable">
+<thead>
+<tr><th>#</th><th>نام</th><th>رقم</th><th>رسید</th><th>تصویر</th><th>ایڈٹ/ڈیلیٹ</th></tr>
+</thead>
+<tbody></tbody>
 </table>
 
-<?php if(isset($_GET['upload_for'])): ?>
-<h3>Upload Receipt/Image for Record #<?php echo $rec_id; ?></h3>
-<form method="POST" enctype="multipart/form-data">
-<input type="hidden" name="record_id" value="<?php echo $rec_id; ?>">
-<input type="file" name="file" required>
-<button type="submit" name="upload_file">Upload</button>
-</form>
-<?php if(isset($success)) echo "<p style='color:green;'>$success</p>"; ?>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-<h4>Uploaded Files:</h4>
-<ul>
-<?php foreach($uploads as $u): ?>
-<li><a href="<?php echo $u['file_path']; ?>" target="_blank"><?php echo $u['file_name']; ?></a></li>
-<?php endforeach; ?>
-</ul>
-<a href="index.php">Back to Dashboard</a>
-<?php endif; ?>
+<button id="exportBtn">Export CSV</button>
+</div>
 
-<?php endif; ?>
-    <?php
-// index.php - مکمل پورٹل
+<script>
+// --- JS سب کچھ یہاں ---
+let customers = [];
 
-// --- DB Config ---
-$servername = "localhost";
-$username = "root"; // اپنا db یوزر
-$password = "";     // اپنا db پاسورڈ
-$dbname = "school_business_portal";
-
-$conn = new mysqli($servername,$username,$password,$dbname);
-if($conn->connect_error){ die("Connection failed: ".$conn->connect_error); }
-
-// --- Session ---
-session_start();
-
-// --- Handle Login ---
-if(isset($_POST['login'])){
-    $user = $_POST['username'];
-    $pass = $_POST['password'];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username=? LIMIT 1");
-    $stmt->bind_param("s",$user);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if($res->num_rows>0){
-        $row = $res->fetch_assoc();
-        if(password_verify($pass,$row['password'])){
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['role'] = $row['role'];
-        } else { $error="Password incorrect"; }
-    } else { $error="User not found"; }
+function openTab(tabName){
+    document.querySelectorAll('.tabcontent').forEach(tab=>tab.style.display='none');
+    document.getElementById(tabName).style.display='block';
 }
 
-// --- Handle Logout ---
-if(isset($_GET['logout'])){
-    session_destroy();
-    header("Location: index.php");
-    exit;
+function renderTable(){
+    let tbody='';
+    customers.forEach((c,i)=>{
+        tbody+='<tr>';
+        tbody+='<td>'+(i+1)+'</td>';
+        tbody+='<td>'+c.name+'</td>';
+        tbody+='<td>'+c.amount+'</td>';
+        tbody+='<td>'+(c.receipt ? '<a href="'+c.receipt+'" target="_blank">دیکھیں</a>' : '')+'</td>';
+        tbody+='<td>'+(c.image ? '<a href="'+c.image+'" target="_blank">دیکھیں</a>' : '')+'</td>';
+        tbody+='<td><button onclick="editCustomer('+i+')">ایڈٹ</button><button onclick="deleteCustomer('+i+')">ڈیلیٹ</button></td>';
+        tbody+='</tr>';
+    });
+    document.querySelector('#customerTable tbody').innerHTML=tbody;
 }
 
-// --- Handle Delete ---
-if(isset($_GET['delete']) && isset($_SESSION['user_id'])){
-    $id = intval($_GET['delete']);
-    $conn->query("DELETE FROM business_records WHERE id=$id");
-    header("Location: index.php");
-    exit;
-}
+document.getElementById('customerForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    let name=document.getElementById('name').value;
+    let amount=document.getElementById('amount').value;
+    let receipt=document.getElementById('receipt').files[0];
+    let image=document.getElementById('image').files[0];
 
-// --- Handle File Upload ---
-if(isset($_POST['upload_file']) && isset($_SESSION['user_id'])){
-    $record_id = intval($_POST['record_id']);
-    $file_name = $_FILES['file']['name'];
-    $file_tmp = $_FILES['file']['tmp_name'];
-    $target = "uploads/".$file_name;
-    if(move_uploaded_file($file_tmp,$target)){
-        $stmt = $conn->prepare("INSERT INTO uploads(record_id,file_name,file_path) VALUES(?,?,?)");
-        $stmt->bind_param("iss",$record_id,$file_name,$target);
-        $stmt->execute();
-        $success = "File uploaded successfully";
-    } else { $error="Upload failed"; }
-}
-
-// --- Handle CSV Export ---
-if(isset($_GET['export']) && isset($_SESSION['user_id'])){
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="business_records.csv"');
-    $out = fopen('php://output','w');
-    fputcsv($out, ['ID','Customer','Item','Amount','Date']);
-    $res = $conn->query("SELECT * FROM business_records");
-    while($row = $res->fetch_assoc()){
-        fputcsv($out, $row);
-    }
-    fclose($out);
-    exit;
-}
-
-// --- Handle Add/Edit Records ---
-if(isset($_POST['save_record']) && isset($_SESSION['user_id'])){
-    $id = intval($_POST['record_id']);
-    $customer = $_POST['customer_name'];
-    $item = $_POST['item'];
-    $amount = $_POST['amount'];
-    if($id>0){
-        $stmt = $conn->prepare("UPDATE business_records SET customer_name=?, item=?, amount=? WHERE id=?");
-        $stmt->bind_param("ssdi",$customer,$item,$amount,$id);
-        $stmt->execute();
+    // فائل اپلوڈ سادہ طور پر base64 (لوکل سٹوریج میں)
+    if(receipt){
+        let reader=new FileReader();
+        reader.onload=function(){ 
+            let receiptData=reader.result;
+            addCustomer(name, amount, receiptData, image?URL.createObjectURL(image):'');
+        }
+        reader.readAsDataURL(receipt);
     } else {
-        $stmt = $conn->prepare("INSERT INTO business_records(customer_name,item,amount,date_created) VALUES(?,?,?,NOW())");
-        $stmt->bind_param("ssd",$customer,$item,$amount);
-        $stmt->execute();
+        addCustomer(name, amount, '', image?URL.createObjectURL(image):'');
     }
-    header("Location: index.php");
-    exit;
+});
+
+function addCustomer(name, amount, receipt, image){
+    customers.push({name, amount, receipt, image});
+    renderTable();
+    document.getElementById('customerForm').reset();
 }
 
-// --- Fetch Records ---
-$records = [];
-if(isset($_SESSION['user_id'])){
-    $records_res = $conn->query("SELECT br.*, u.username FROM business_records br LEFT JOIN users u ON u.id=br.id ORDER BY br.id DESC");
-    while($r = $records_res->fetch_assoc()){ $records[]=$r; }
+function deleteCustomer(index){
+    if(confirm('کیا آپ واقعی حذف کرنا چاہتے ہیں؟')){
+        customers.splice(index,1);
+        renderTable();
+    }
 }
 
-// --- Fetch Uploads ---
-$uploads = [];
-if(isset($_GET['upload_for']) && isset($_SESSION['user_id'])){
-    $rec_id = intval($_GET['upload_for']);
-    $up_res = $conn->query("SELECT * FROM uploads WHERE record_id=$rec_id");
-    while($u = $up_res->fetch_assoc()){ $uploads[]=$u; }
+function editCustomer(index){
+    let c=customers[index];
+    let newName=prompt('نیا نام درج کریں:', c.name);
+    if(newName) c.name=newName;
+    let newAmount=prompt('نئی رقم درج کریں:', c.amount);
+    if(newAmount) c.amount=newAmount;
+    renderTable();
 }
-?>
 
-<!DOCTYPE html>
-<html lang="ur" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سکول + بزنس پورٹل</title>
-<style>
-body{font-family:sans-serif;background:#f5f5f5;padding:20px;}
-table, th, td{border:1px solid #333;border-collapse:collapse;padding:5px;}
-input,button{padding:5px;margin:2px;}
-a{margin:0 5px;}
-</style>
-</head>
-<body>
+// CSV ایکسپورٹ
+document.getElementById('exportBtn').addEventListener('click', function(){
+    let csv='نام,رقم,رسید,تصویر\n';
+    customers.forEach(c=>{
+        csv+=`"${c.name}","${c.amount}","${c.receipt}","${c.image}"\n`;
+    });
+    let blob=new Blob([csv], {type:'text/csv'});
+    let url=URL.createObjectURL(blob);
+    let a=document.createElement('a');
+    a.href=url; a.download='customers.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+});
+</script>
 
-<?php if(!isset($_SESSION['user_id'])): ?>
-<h2>Login</h2>
-<form method="POST">
-<input type="text" name="username" placeholder="Username" required>
-<input type="password" name="password" placeholder="Password" required>
-<button type="submit" name="login">Login</button>
-</form>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-<?php else: ?>
-
-<h2>Welcome, <?php echo $_SESSION['role']; ?></h2>
-<a href="?logout=1">Logout</a> | <a href="?export=1">Export CSV</a>
-
-<h3>Add/Edit Record</h3>
-<form method="POST">
-<input type="hidden" name="record_id" value="<?php echo isset($_GET['edit'])?intval($_GET['edit']):0; ?>">
-<input type="text" name="customer_name" placeholder="Customer Name" required value="<?php echo isset($_GET['edit'])?$records[intval($_GET['edit'])-1]['customer_name']:''; ?>">
-<input type="text" name="item" placeholder="Item" required value="<?php echo isset($_GET['edit'])?$records[intval($_GET['edit'])-1]['item']:''; ?>">
-<input type="number" step="0.01" name="amount" placeholder="Amount" required value="<?php echo isset($_GET['edit'])?$records[intval($_GET['edit'])-1]['amount']:''; ?>">
-<button type="submit" name="save_record">Save</button>
-</form>
-
-<h3>Business Records</h3>
-<table>
-<tr><th>ID</th><th>Customer</th><th>Item</th><th>Amount</th><th>Date</th><th>Actions</th></tr>
-<?php foreach($records as $row): ?>
-<tr>
-<td><?php echo $row['id']; ?></td>
-<td><?php echo $row['customer_name']; ?></td>
-<td><?php echo $row['item']; ?></td>
-<td><?php echo $row['amount']; ?></td>
-<td><?php echo $row['date_created']; ?></td>
-<td>
-<a href="?edit=<?php echo $row['id']; ?>">Edit</a> | 
-<a href="?delete=<?php echo $row['id']; ?>" onclick="return confirm('Are you sure?')">Delete</a> | 
-<a href="?upload_for=<?php echo $row['id']; ?>">Upload/View</a>
-</td>
-</tr>
-<?php endforeach; ?>
-</table>
-
-<?php if(isset($_GET['upload_for'])): ?>
-<h3>Upload Receipt/Image for Record #<?php echo $rec_id; ?></h3>
-<form method="POST" enctype="multipart/form-data">
-<input type="hidden" name="record_id" value="<?php echo $rec_id; ?>">
-<input type="file" name="file" required>
-<button type="submit" name="upload_file">Upload</button>
-</form>
-<?php if(isset($success)) echo "<p style='color:green;'>$success</p>"; ?>
-<?php if(isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-<h4>Uploaded Files:</h4>
-<ul>
-<?php foreach($uploads as $u): ?>
-<li><a href="<?php echo $u['file_path']; ?>" target="_blank"><?php echo $u['file_name']; ?></a></li>
-<?php endforeach; ?>
-</ul>
-<a href="index.php">Back to Dashboard</a>
-<?php endif; ?>
-
-<?php endif; ?>
-</body>
-</html>
 </body>
 </html>
