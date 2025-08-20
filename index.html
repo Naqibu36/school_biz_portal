@@ -1,0 +1,164 @@
+<!DOCTYPE html><html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سکول اور بزنس پورٹل - مکمل POS</title>
+<style>
+body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+header, main { padding: 20px; }
+button { margin: 5px; padding: 5px 10px; }
+input, select { padding: 5px; margin: 5px; }
+.container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #aaa; }
+.hidden { display: none; }
+table { width: 100%; border-collapse: collapse; }
+td, th { border: 1px solid #ccc; padding: 8px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>سکول اور بزنس پورٹل</h1>
+<p>رابطہ: WhatsApp 03419208226 | Email: naqibullahshah58@gmail.com</p>
+</header>
+<main>
+<!-- Login/Register Section -->
+<div id="auth-section">
+<h2>لاگ ان / رجسٹریشن</h2>
+<div id="login-form">
+<h3>لاگ ان</h3>
+<input type="text" id="login-username" placeholder="یوزر نیم"><br>
+<input type="password" id="login-password" placeholder="پاسورڈ"><br>
+<button onclick="loginUser()">لاگ ان</button>
+<button onclick="showRegister()">رجسٹریشن</button>
+<button onclick="forgotPassword()">پاسورڈ بھول گئے؟</button>
+</div>
+<div id="register-form" class="hidden">
+<h3>رجسٹریشن</h3>
+<input type="text" id="register-username" placeholder="یوزر نیم"><br>
+<input type="password" id="register-password" placeholder="پاسورڈ"><br>
+<button onclick="registerUser()">رجسٹر کریں</button>
+<button onclick="showLogin()">لاگ ان پر واپس جائیں</button>
+</div>
+</div><!-- Admin Dashboard --><div id="admin-dashboard" class="hidden">
+<h2>ایڈمن ڈیش بورڈ</h2>
+<h3>کسٹمرز کی لسٹ</h3>
+<table id="customer-table">
+<tr><th>کسٹمر کا نام</th><th>ایڈیٹ</th><th>ڈیلیٹ</th><th>تصویر/رسید</th></tr>
+</table>
+</div><!-- Customer Profile --><div id="customer-profile" class="hidden">
+<h2>کسٹمر پروفائل</h2>
+<p id="welcome-msg"></p>
+<h3>اپنی معلومات اپ ڈیٹ کریں</h3>
+<input type="text" id="profile-username" placeholder="یوزر نیم"><br>
+<input type="password" id="profile-password" placeholder="پاسورڈ"><br>
+<button onclick="updateProfile()">اپ ڈیٹ کریں</button>
+<h3>تصویر / رسید اپلوڈ کریں</h3>
+<input type="file" id="profile-image" onchange="previewImage(event)"><br>
+<img id="image-preview" src="" style="max-width:200px; display:none;">
+</div></main>
+</div><script>
+let users = [{username:'admin', password:'12345', role:'admin'}];
+let currentUser = null;
+
+function showRegister() {
+document.getElementById('login-form').classList.add('hidden');
+document.getElementById('register-form').classList.remove('hidden');
+}
+function showLogin() {
+document.getElementById('register-form').classList.add('hidden');
+document.getElementById('login-form').classList.remove('hidden');
+}
+
+function registerUser() {
+ let uname = document.getElementById('register-username').value;
+ let pwd = document.getElementById('register-password').value;
+ if(uname && pwd){
+   if(users.find(u=>u.username===uname)){ alert('یہ یوزر پہلے سے موجود ہے'); return; }
+   users.push({username:uname,password:pwd,role:'customer'});
+   alert('رجسٹریشن کامیاب');
+   showLogin();
+ } else { alert('تمام فیلڈز بھریں'); }
+}
+
+function loginUser(){
+ let uname = document.getElementById('login-username').value;
+ let pwd = document.getElementById('login-password').value;
+ let user = users.find(u=>u.username===uname && u.password===pwd);
+ if(user){
+   currentUser = user;
+   document.getElementById('auth-section').classList.add('hidden');
+   if(user.role==='admin'){ showAdminDashboard(); }
+   else{ showCustomerProfile(); }
+ } else { alert('لاگ ان ناکام'); }
+}
+
+function forgotPassword(){
+ let uname = prompt('اپنا یوزر نیم درج کریں');
+ let user = users.find(u=>u.username===uname);
+ if(user){
+   let newPwd = prompt('نیا پاسورڈ درج کریں');
+   if(newPwd){ user.password=newPwd; alert('پاسورڈ اپ ڈیٹ ہو گیا'); }
+ }
+ else{ alert('یوزر نہیں ملا'); }
+}
+
+function showAdminDashboard(){
+ document.getElementById('admin-dashboard').classList.remove('hidden');
+ refreshCustomerTable();
+}
+
+function refreshCustomerTable(){
+ let table = document.getElementById('customer-table');
+ table.innerHTML = '<tr><th>کسٹمر کا نام</th><th>ایڈیٹ</th><th>ڈیلیٹ</th><th>تصویر/رسید</th></tr>';
+ users.filter(u=>u.role==='customer').forEach((u,index)=>{
+   let row = table.insertRow();
+   row.insertCell(0).innerText = u.username;
+   row.insertCell(1).innerHTML = `<button onclick='editCustomer(${index})'>ایڈیٹ</button>`;
+   row.insertCell(2).innerHTML = `<button onclick='deleteCustomer(${index})'>ڈیلیٹ</button>`;
+   row.insertCell(3).innerHTML = u.image ? `<img src='${u.image}' style='max-width:100px;'>` : '';
+ });
+}
+
+function editCustomer(index){
+ let uname = prompt('نیا یوزر نیم درج کریں', users[index].username);
+ if(uname) users[index].username=uname;
+ let pwd = prompt('نیا پاسورڈ درج کریں', users[index].password);
+ if(pwd) users[index].password=pwd;
+ refreshCustomerTable();
+}
+
+function deleteCustomer(index){
+ if(confirm('کیا آپ واقعی ڈیلیٹ کرنا چاہتے ہیں؟')){
+   users.splice(index,1);
+   refreshCustomerTable();
+ }
+}
+
+function showCustomerProfile(){
+ document.getElementById('customer-profile').classList.remove('hidden');
+ document.getElementById('welcome-msg').innerText = currentUser.username + '، خوش آمدید';
+ document.getElementById('profile-username').value = currentUser.username;
+ document.getElementById('profile-password').value = currentUser.password;
+}
+
+function updateProfile(){
+ let uname = document.getElementById('profile-username').value;
+ let pwd = document.getElementById('profile-password').value;
+ if(uname && pwd){
+   currentUser.username = uname;
+   currentUser.password = pwd;
+   alert('پروفائل اپ ڈیٹ ہو گیا');
+ } else { alert('تمام فیلڈز بھریں'); }
+}
+
+function previewImage(event){
+ let reader = new FileReader();
+ reader.onload = function(){
+   currentUser.image = reader.result;
+   document.getElementById('image-preview').src = reader.result;
+   document.getElementById('image-preview').style.display='block';
+ };
+ reader.readAsDataURL(event.target.files[0]);
+}
+</script></body>
+</html>
