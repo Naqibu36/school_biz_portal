@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سکول اور بزنس پورٹل - مکمل POS</title>
+<style>
+body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+h2 { color: #2e7d32; }
+form input { padding: 5px; margin: 0 5px 10px 0; }
+button { padding: 5px 10px; margin: 2px; border: none; border-radius: 4px; cursor: pointer; }
+.addBtn { background-color: #0275d8; color: white; }
+.editBtn { background-color: #f0ad4e; color: white; }
+.deleteBtn { background-color: #d9534f; color: white; }
+.saveBtn { background-color: #5cb85c; color: white; }
+.cancelBtn { background-color: #777; color: white; }
+.exportBtn { background-color: #17a2b8; color: white; }
+.importBtn { background-color: #6f42c1; color: white; }
+.printBtn { background-color: #ff9800; color: white; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 10px; background: white; }
+th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+th { background-color: #388e3c; color: white; }
+input[type="text"], select { width: 90%; padding: 5px; margin-bottom: 10px; }
+#searchBox { width: 50%; padding: 5px; margin-bottom: 10px; }
+.pagination { margin-top: 10px; }
+.pagination button { margin: 2px; }
+</style>
+</head>
+<body>
+
+<h2>طالب علم / کسٹمر ڈیٹا</h2>
+
+<form id="addForm">
+    <input type="text" id="name" placeholder="نام" required>
+    <input type="text" id="email" placeholder="ای میل" required>
+    <input type="text" id="phone" placeholder="فون نمبر" required>
+    <button type="submit" class="addBtn">Add New Record</button>
+</form>
+
+<label for="rowsPerPageSelect">Rows per page:</label>
+<select id="rowsPerPageSelect">
+    <option value="5" selected>5</option>
+    <option value="10">10</option>
+    <option value="20">20</option>
+    <option value="50">50</option>
+</select>
+
+<input type="text" id="searchBox" placeholder="Search by Name, Email or Phone">
+
+<button id="exportBtn" class="exportBtn">Export to CSV</button>
+<input type="file" id="importFile" class="importBtn" accept=".csv">
+<button id="printBtn" class="printBtn">Print Table</button>
+
+<table id="dataTable">
+    <thead>
+        <tr>
+            <th>نام</th>
+            <th>ای میل</th>
+            <th>فون نمبر</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- ریکارڈز یہاں آئیں گے -->
+    </tbody>
+</table>
+
+<div class="pagination" id="pagination"></div>
+
+<script>
+const tableBody = document.querySelector('#dataTable tbody');
+let data = JSON.parse(localStorage.getItem('records')) || [];
+let currentPage = 1;
+let rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+let filteredData = null;
+
+function renderTable(page=1) {
+    const displayData = filteredData || data;
+    const totalPages = Math.ceil(displayData.length / rowsPerPage);
+    if(page > totalPages) page = totalPages;
+    if(page < 1) page = 1;
+    currentPage = page;
+
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const paginatedData = displayData.slice(start, end);
+
+    tableBody.innerHTML = '';
+    paginatedData.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.email}</td>
+            <td>${item.phone}</td>
+            <td>
+                <button class="editBtn">Edit</button>
+                <button class="deleteBtn">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+    renderPagination(displayData.length, page);
+}
+
+function renderPagination(totalItems, page) {
+    const totalPages = Math.ceil(totalItems / rowsPerPage);
+    const paginationDiv = document.getElementById('pagination');
+    paginationDiv.innerHTML = '';
+
+    const firstBtn = document.createElement('button');
+    firstBtn.innerText = 'First';
+    firstBtn.disabled = page === 1;
+    firstBtn.addEventListener('click', () => { renderTable(1); });
+    paginationDiv.appendChild(firstBtn);
+
+    const prevBtn = document.createElement('button');
+    prevBtn.innerText = 'Previous';
+    prevBtn.disabled = page === 1;
+    prevBtn.addEventListener('click', () => { renderTable(currentPage-1); });
+    paginationDiv.appendChild(prevBtn);
+
+    for (let i=1; i<=totalPages; i++){
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        if(i===page) btn.style.fontWeight='bold';
+        btn.addEventListener('click', () => { renderTable(i); });
+        paginationDiv.appendChild(btn);
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.innerText = 'Next';
+    nextBtn.disabled = page === totalPages || totalPages === 0;
+    nextBtn.addEventListener('click', () => { renderTable(currentPage+1); });
+    paginationDiv.appendChild(nextBtn);
+
+    const lastBtn = document.createElement('button');
+    lastBtn.innerText = 'Last';
+    lastBtn.disabled = page === totalPages || totalPages === 0;
+    lastBtn.addEventListener('click', () => { renderTable(totalPages); });
+    paginationDiv.appendChild(lastBtn);
+}
+
+document.getElementById('rowsPerPageSelect').addEventListener('change', function() {
+    rowsPerPage = parseInt(this.value);
+    currentPage = 1;
+    renderTable(currentPage);
+});
+
+document.getElementById('addForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    if(name && email && phone){
+        data.push({name, email, phone});
+        localStorage.setItem('records', JSON.stringify(data));
+        renderTable(currentPage);
+        this.reset();
+    }
+});
+
+tableBody.addEventListener('click', function(e) {
+    const target = e.target;
+    const row = target.closest('tr');
+    const index = (currentPage-1)*rowsPerPage + Array.from(tableBody.rows).indexOf(row);
+
+    if (target.classList.contains('editBtn')) {
+        const cells = row.querySelectorAll('td');
+        for (let i = 0; i < 3; i++) {
+            const text = cells[i].innerText;
+            cells[i].innerHTML = `<input type="text" value="${text}">`;
+        }
+        cells[3].innerHTML = `
+            <button class="saveBtn">Save</button>
+            <button class="cancelBtn">Cancel</button>
+        `;
+    } else if (target.classList.contains('saveBtn')) {
+        const inputs = row.querySelectorAll('input');
+        data[index] = {
+            name: inputs[0].value,
+            email: inputs[1].value,
+            phone: inputs[2].value
+        };
+        localStorage.setItem('records', JSON.stringify(data));
+        renderTable(currentPage);
+    } else if (target.classList.contains('cancelBtn')) {
+        renderTable(currentPage);
+    } else if (target.classList.contains('deleteBtn')) {
+        if(confirm('کیا آپ واقعی یہ ریکارڈ حذف کرنا چاہتے ہیں؟')){
+            data.splice(index,1);
+            localStorage.setItem('records', JSON.stringify(data));
+            renderTable(currentPage);
+        }
+    }
+});
+
+document.getElementById('searchBox').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    filteredData = data.filter(item => 
+        item.name.toLowerCase().includes(query) ||
+        item.email.toLowerCase().includes(query) ||
+        item.phone.toLowerCase().includes(query)
+    );
+    currentPage = 1;
+    renderTable(currentPage);
+});
+
+document.getElementById('exportBtn').addEventListener('click', function() {
+    let csvContent = "data:text/csv;charset=utf-8,نام,ای میل,فون نمبر\n";
+    data.forEach(item => {
+        csvContent += `${item.name},${item.email},${item.phone}\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "records.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+document.getElementById('importFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(evt){
+            const lines = evt.target.result.split("\n").slice(1);
+            lines.forEach(line => {
+                const [name,email,phone] = line.split(",");
+                if(name && email && phone){
+                    data.push({name:name.trim(), email:email.trim(), phone:phone.trim()});
+                }
+            });
+            localStorage.setItem('records', JSON.stringify(data));
+            renderTable(currentPage);
+        };
+        reader.readAsText(file);
+    }
+});
+
+document.getElementById('printBtn').addEventListener('click', function() {
+    const printContent = document.getElementById('dataTable').outerHTML;
+    const newWin = window.open('', '', 'width=900,height=600');
+    newWin.document.write('<html><head><title>Print Table</title></head><body>');
+    newWin.document.write(printContent);
+    newWin.document.write('</body></html>');
+    newWin.document.close();
+    newWin.print();
+});
+
+window.onload = function() { renderTable(currentPage); }
+</script>
+
+</body>
+</html>
