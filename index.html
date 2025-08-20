@@ -279,6 +279,748 @@ function backupData(){
     URL.revokeObjectURL(url);
 }
 </script>
+    <!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سکول + بزنس POS پورٹل</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<style>
+  :root{
+    --green:#2e7d32; --green2:#388e3c; --green3:#1b5e20;
+    --blue:#2563eb; --blue2:#1d4ed8; --violet:#7c3aed;
+    --bg:#f4f7fb; --card:#ffffff; --text:#0f172a; --muted:#475569;
+    --accent:#22c55e; --danger:#ef4444; --amber:#f59e0b;
+    --border:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Tajawal,Segoe UI,Arial,Tahoma,sans-serif;background:var(--bg);color:var(--text)}
+  header{
+    background:linear-gradient(135deg,var(--blue),var(--violet));
+    color:#fff;text-align:center;padding:28px 16px
+  }
+  header h1{margin:0 0 6px;font-size:28px}
+  header p{margin:0;opacity:.95}
+  .container{max-width:1200px;margin:0 auto;padding:18px 14px}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 0}
+  .tab-btn{
+    background:#e0e7ff;color:#1e3a8a;border:0;border-radius:999px;padding:10px 16px;
+    font-weight:700;cursor:pointer;transition:.2s
+  }
+  .tab-btn.active,.tab-btn:hover{background:#c7d2fe}
+  .panel{display:none}
+  .panel.active{display:block}
+  .card{
+    background:var(--card);border-radius:18px;box-shadow:0 8px 22px rgba(0,0,0,.08);
+    padding:16px;margin:14px 0;border:1px solid var(--border)
+  }
+  h2{margin:0 0 10px;color:var(--green)}
+  h3{margin:8px 0;color:var(--blue)}
+  .grid{display:grid;gap:12px}
+  @media(min-width:900px){ .grid-2{grid-template-columns:repeat(2,1fr)} .grid-3{grid-template-columns:repeat(3,1fr)} .grid-4{grid-template-columns:repeat(4,1fr)} }
+  .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700;margin:4px 2px}
+  .btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue2)}
+  .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green3)}
+  .btn-ghost{background:#eef2ff;color:#1e3a8a}
+  .btn-danger{background:var(--danger);color:#fff}
+  .btn-amber{background:var(--amber);color:#111}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input,select,textarea{
+    padding:9px;border-radius:10px;border:1px solid #d1d5db;font-size:15px;width:100%
+  }
+  label{font-weight:700;color:var(--muted);font-size:14px;margin:4px 0}
+  .muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+  th,td{border:1px solid #e5e7eb;padding:8px;text-align:center}
+  th{background:var(--green);color:#fff}
+  tr:nth-child(even){background:#fafafa}
+  .teacher-card{border:1px dashed #d1d5db;border-radius:14px;padding:12px;text-align:center}
+  .teacher-card img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #eee;background:#fff}
+  .kpi{background:#0b1220;color:#dbeafe;border-radius:12px;padding:12px;text-align:center}
+  .kpi b{display:block;font-size:18px;margin-top:4px;color:#fff}
+  footer{margin-top:18px;background:#0f172a;color:#cbd5e1;text-align:center;padding:16px}
+  .badge{display:inline-block;background:#e2e8f0;border-radius:999px;padding:4px 10px;margin:0 4px}
+  .success{color:#0a8f3c}
+  .error{color:#b91c1c}
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 سکول + 💼 بزنس POS پورٹل</h1>
+  <p class="muted">ایک ہی صفحہ میں: اساتذہ/ٹائم ٹیبل + اسٹاک/سیلز/رپورٹس — سب کچھ ایڈیٹیبل، آف لائن بھی</p>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="school">سکول پینل</button>
+    <button class="tab-btn" data-tab="business">بزنس / POS</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- KPIs -->
+  <div class="grid grid-4">
+    <div class="kpi">اساتذہ<b id="kpiTeachers">0</b></div>
+    <div class="kpi">آئٹمز (اسٹاک)<b id="kpiItems">0</b></div>
+    <div class="kpi">کل سیلز (آج)<b id="kpiSalesToday">0</b></div>
+    <div class="kpi">منافع (آج)<b id="kpiProfitToday">0</b></div>
+  </div>
+
+  <!-- ============= SCHOOL PANEL ============= -->
+  <section id="school" class="panel active">
+    <!-- Teachers -->
+    <div class="card">
+      <h2>👩‍🏫 اساتذہ (8)</h2>
+      <div class="grid grid-4" id="teachersGrid"></div>
+      <div class="row" style="justify-content:center;margin-top:8px">
+        <button class="btn btn-green" onclick="saveTeachers()">اساتذہ محفوظ کریں</button>
+        <button class="btn btn-ghost" onclick="resetTeachers()">ڈیفالٹ بحال</button>
+      </div>
+    </div>
+
+    <!-- Timetable -->
+    <div class="card">
+      <h2>📅 ٹائم ٹیبل (پیر تا ہفتہ — 8 پیریڈز)</h2>
+      <div class="muted" style="margin-bottom:6px">ہر خانے میں مضمون کا نام لکھیں۔</div>
+      <div id="ttWrap" style="overflow:auto">
+        <table id="ttTable" aria-label="School Timetable">
+          <thead>
+            <tr>
+              <th>دن</th>
+              <th>پیریڈ 1</th><th>پیریڈ 2</th><th>پیریڈ 3</th><th>پیریڈ 4</th>
+              <th>پیریڈ 5</th><th>پیریڈ 6</th><th>پیریڈ 7</th><th>پیریڈ 8</th>
+            </tr>
+          </thead>
+          <tbody id="ttBody"></tbody>
+        </table>
+      </div>
+      <div class="row" style="justify-content:center;margin-top:8px">
+        <button class="btn btn-green" onclick="saveTimetable()">ٹائم ٹیبل محفوظ کریں</button>
+        <button class="btn btn-amber" onclick="downloadTTasPDF()">PDF ڈاؤن لوڈ</button>
+        <button class="btn btn-primary" onclick="shareTTWhatsApp()">WhatsApp شیئر</button>
+        <button class="btn btn-ghost" onclick="resetTimetable()">ڈیفالٹ بحال</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= BUSINESS PANEL ============= -->
+  <section id="business" class="panel">
+
+    <!-- Login / Admin -->
+    <div class="card">
+      <h2>🔐 ایڈمن لاگ اِن</h2>
+      <div class="grid grid-3">
+        <div>
+          <label>ای میل (ایڈمن)</label>
+          <input id="adminEmail" placeholder="ای میل" value="naqibullahshah58@gmail.com">
+        </div>
+        <div>
+          <label>فون/واٹس ایپ</label>
+          <input id="adminPhone" placeholder="مثلاً 03419208226" value="03419208226">
+        </div>
+        <div>
+          <label>پاس ورڈ (سیٹ/لاگ اِن)</label>
+          <input id="adminPass" type="password" placeholder="پاس ورڈ">
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn btn-green" onclick="setAdmin()">Set Admin (پہلی بار)</button>
+        <button class="btn btn-primary" onclick="login()">Login</button>
+        <span id="loginMsg" class="muted"></span>
+      </div>
+    </div>
+
+    <!-- POS Content (hidden until login) -->
+    <div id="posArea" style="display:none">
+
+      <!-- Inventory -->
+      <div class="card">
+        <h2>📦 Inventory / اسٹاک</h2>
+        <div class="grid grid-4">
+          <div><label>نام</label><input id="pName"></div>
+          <div><label>بارکوڈ</label><input id="pBarcode" placeholder="مثلاً 1234567890123"></div>
+          <div><label>لاگت قیمت</label><input id="pCost" type="number" step="0.01"></div>
+          <div><label>سیل قیمت</label><input id="pPrice" type="number" step="0.01"></div>
+          <div><label>Quantity</label><input id="pQty" type="number"></div>
+          <div class="row"><button class="btn btn-green" onclick="addItem()">آئٹم شامل کریں</button></div>
+        </div>
+        <div style="margin-top:8px;overflow:auto">
+          <table id="invTable">
+            <thead>
+              <tr><th>#</th><th>نام</th><th>بارکوڈ</th><th>لاگت</th><th>قیمت</th><th>Qty</th><th>عمل</th></tr>
+            </thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn btn-ghost" onclick="exportJSON('inventory')">JSON ایکسپورٹ</button>
+          <button class="btn btn-ghost" onclick="exportCSV('inventory')">CSV ایکسپورٹ</button>
+          <label class="badge">Import JSON: <input type="file" accept="application/json" onchange="importJSON(event,'inventory')"></label>
+        </div>
+      </div>
+
+      <!-- Sales / Cart -->
+      <div class="card">
+        <h2>🧾 Sales / کارٹ & انوائس</h2>
+        <div class="grid grid-4">
+          <div><label>بارکوڈ / نام</label><input id="saleSearch" placeholder="Scan یا نام لکھیں"></div>
+          <div><label>Qty</label><input id="saleQty" type="number" value="1"></div>
+          <div class="row"><button class="btn btn-green" onclick="addToCart()">کارٹ میں شامل</button></div>
+        </div>
+        <div style="margin-top:8px;overflow:auto">
+          <table>
+            <thead><tr><th>#</th><th>نام</th><th>بارکوڈ</th><th>قیمت</th><th>Qty</th><th>کل</th><th>حذف</th></tr></thead>
+            <tbody id="cartBody"></tbody>
+          </table>
+        </div>
+        <div class="grid grid-4" style="margin-top:8px">
+          <div><label>ڈسکاؤنٹ (%)</label><input id="discPct" type="number" value="0"></div>
+          <div><label>ٹیکس (%)</label><input id="taxPct" type="number" value="0"></div>
+          <div class="kpi">بل کی رقم<b id="billTotal">0</b></div>
+          <div class="kpi">منافع (اس بیل)<b id="billProfit">0</b></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn btn-primary" onclick="finalizeSale()">Finalize / Save</button>
+          <button class="btn btn-amber" onclick="printInvoice()">پرنٹ/PDF انوائس</button>
+          <button class="btn btn-ghost" onclick="shareInvoiceWA()">WhatsApp شیئر</button>
+          <button class="btn btn-danger" onclick="clearCart()">کارٹ صاف</button>
+        </div>
+        <div id="invoiceArea" class="card" style="display:none;margin-top:10px">
+          <h3>رسید / Invoice</h3>
+          <div id="invoiceContent"></div>
+        </div>
+      </div>
+
+      <!-- Reports -->
+      <div class="card">
+        <h2>📈 رپورٹس</h2>
+        <div class="grid grid-3">
+          <div><label>تاریخ سے</label><input id="repFrom" type="date"></div>
+          <div><label>تاریخ تک</label><input id="repTo" type="date"></div>
+          <div class="row"><button class="btn btn-green" onclick="buildReport()">رپورٹ بنائیں</button></div>
+        </div>
+        <div class="grid grid-3" style="margin-top:8px">
+          <div class="kpi">Total Sales<b id="repSales">0</b></div>
+          <div class="kpi">Total Profit<b id="repProfit">0</b></div>
+          <div class="kpi">Bills Count<b id="repBills">0</b></div>
+        </div>
+        <div class="card" style="margin-top:8px">
+          <h3>Hot Items</h3>
+          <ul id="hotItems"></ul>
+          <h3 style="margin-top:8px">Dead Items</h3>
+          <ul id="deadItems"></ul>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button class="btn btn-amber" onclick="exportJSON('sales')">Sales JSON</button>
+          <button class="btn btn-ghost" onclick="exportCSV('sales')">Sales CSV</button>
+        </div>
+      </div>
+
+      <!-- Customers & Suppliers -->
+      <div class="card">
+        <h2>👥 Customers & Suppliers</h2>
+        <div class="grid grid-3">
+          <div><label>نام</label><input id="csName"></div>
+          <div><label>رابطہ</label><input id="csPhone"></div>
+          <div><label>ای میل</label><input id="csEmail"></div>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button class="btn btn-green" onclick="addCustomer()">کسٹمر شامل</button>
+          <button class="btn btn-amber" onclick="addSupplier()">سپلائر شامل</button>
+        </div>
+        <div class="grid grid-2" style="margin-top:8px">
+          <div>
+            <h3>Customers</h3>
+            <ul id="custList"></ul>
+          </div>
+          <div>
+            <h3>Suppliers</h3>
+            <ul id="supList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="card">
+        <h2>🧾 آرڈر لسٹ</h2>
+        <div class="row">
+          <label>آرڈر نوٹ</label>
+          <input id="orderNote" placeholder="تفصیل/نام/ٹیبل/ڈیلیوری نوٹ">
+          <button class="btn btn-green" onclick="saveOrder()">آرڈر محفوظ</button>
+          <button class="btn btn-amber" onclick="printOrders()">آرڈر پرنٹ</button>
+        </div>
+        <ol id="ordersList" style="margin-top:8px"></ol>
+      </div>
+
+      <!-- Barcode Generator -->
+      <div class="card">
+        <h2>🏷️ بارکوڈ جنریٹر</h2>
+        <div class="row">
+          <input id="bcInput" placeholder="1234567890123">
+          <button class="btn btn-green" onclick="makeBarcode()">Generate</button>
+        </div>
+        <svg id="barcode"></svg>
+      </div>
+
+      <!-- Backup / Restore -->
+      <div class="card">
+        <h2>💾 بیک اپ / ریسٹور</h2>
+        <div class="row">
+          <button class="btn btn-primary" onclick="backupAll()">تمام ڈیٹا JSON ایکسپورٹ</button>
+          <label class="badge">Import JSON <input type="file" accept="application/json" onchange="restoreAll(event)"></label>
+          <button class="btn btn-danger" onclick="wipeAll()">تمام ڈیٹا حذف</button>
+        </div>
+        <div class="muted">نوٹ: یہ سسٹم پورا **LocalStorage** پر ہے، اس لیے ڈیٹا آپ کے براؤزر میں محفوظ رہتا ہے (آن لائن/آف لائن دونوں صورتیں)۔</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  © 2025 — سکول + بزنس POS (لوکل اسٹوریج بیسڈ). رابطہ: <a href="https://wa.me/923419208226" target="_blank" style="color:#93c5fd">0341-9208226</a> — <a href="mailto:naqibullahshah58@gmail.com" style="color:#93c5fd">naqibullahshah58@gmail.com</a>
+</footer>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* ================== UTILITIES & STORAGE ================== */
+const LS = {
+  get:k=>{ try{return JSON.parse(localStorage.getItem(k)||'null')}catch{ return null }},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),
+  del:k=>localStorage.removeItem(k)
+};
+const fmt = n => Number(n||0).toFixed(2);
+const todayISO = ()=> new Date().toISOString().slice(0,10);
+
+/* Keys */
+const K = {
+  teachers:'sch_teachers',
+  timetable:'sch_timetable',
+  admin:'pos_admin',
+  inv:'pos_inventory',
+  sales:'pos_sales',
+  cart:'pos_cart',
+  customers:'pos_customers',
+  suppliers:'pos_suppliers',
+  orders:'pos_orders'
+};
+
+/* ================== TABS ================== */
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.tab).classList.add('active');
+  };
+});
+
+/* ================== SCHOOL: TEACHERS ================== */
+const defaultTeachers = ()=> Array.from({length:8},(_,i)=>({
+  name:`استاد ${i+1}`,
+  img:null
+}));
+
+function renderTeachers(){
+  const t = LS.get(K.teachers) || defaultTeachers();
+  const grid = document.getElementById('teachersGrid');
+  grid.innerHTML='';
+  t.forEach((tc,idx)=>{
+    const card = document.createElement('div');
+    card.className='teacher-card';
+    card.innerHTML=`
+      <img id="timg${idx}" src="${tc.img || 'https://cdn-icons-png.flaticon.com/512/201/201818.png'}" alt="teacher">
+      <input id="tname${idx}" value="${tc.name}">
+      <input type="file" accept="image/*" onchange="onTeacherImg(${idx},event)">
+    `;
+    grid.appendChild(card);
+  });
+  document.getElementById('kpiTeachers').textContent = t.length;
+}
+function onTeacherImg(i,ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const rd = new FileReader();
+  rd.onload = ()=> {
+    document.getElementById('timg'+i).src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+function saveTeachers(){
+  const t = [];
+  for(let i=0;i<8;i++){
+    const name = document.getElementById('tname'+i).value.trim() || ('استاد '+(i+1));
+    const img = document.getElementById('timg'+i).src || null;
+    t.push({name,img});
+  }
+  LS.set(K.teachers,t);
+  alert('اساتذہ محفوظ ہوگئے ✅');
+}
+function resetTeachers(){
+  LS.set(K.teachers, defaultTeachers());
+  renderTeachers();
+}
+
+/* ================== SCHOOL: TIMETABLE ================== */
+const days = ['پیر','منگل','بدھ','جمعرات','جمعہ','ہفتہ']; // اتوار شامل نہیں
+function defaultTT(){
+  const obj={};
+  days.forEach(d=>{
+    obj[d]=Array.from({length:8},(_,i)=>`مضمون ${i+1}`);
+  });
+  return obj;
+}
+function renderTimetable(){
+  const tt = LS.get(K.timetable) || defaultTT();
+  const tb = document.getElementById('ttBody');
+  tb.innerHTML='';
+  days.forEach(d=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td><b>${d}</b></td>` + tt[d].map((sub,i)=>`<td contenteditable="true" data-day="${d}" data-idx="${i}">${sub}</td>`).join('');
+    tb.appendChild(tr);
+  });
+  // Live update
+  tb.querySelectorAll('td[contenteditable]').forEach(td=>{
+    td.addEventListener('input',()=>{
+      const d=td.dataset.day, i=td.dataset.idx;
+      const obj = LS.get(K.timetable) || defaultTT();
+      obj[d][i] = td.textContent.trim();
+      LS.set(K.timetable,obj);
+    });
+  });
+}
+function saveTimetable(){ alert('ٹائم ٹیبل خودکار محفوظ ہوتا رہتا ہے ✅') }
+function resetTimetable(){ LS.set(K.timetable, defaultTT()); renderTimetable(); }
+async function downloadTTasPDF(){
+  const { jsPDF } = window.jspdf;
+  const node = document.getElementById('ttTable');
+  const canvas = await html2canvas(node,{scale:2});
+  const img = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p','mm','a4');
+  const pageW=pdf.internal.pageSize.getWidth();
+  const ratio = canvas.width/canvas.height;
+  const w=pageW-20, h=w/ratio;
+  pdf.addImage(img,'PNG',10,10,w,h);
+  pdf.save('timetable.pdf');
+}
+async function shareTTWhatsApp(){
+  const msg = '📅 ہمارا اسکول ٹائم ٹیبل دیکھیں';
+  const url = "https://"+location.host+location.pathname;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg+' '+url),'_blank');
+}
+
+/* ================== BUSINESS: LOGIN ================== */
+function setAdmin(){
+  const email = document.getElementById('adminEmail').value.trim();
+  const phone = document.getElementById('adminPhone').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  if(!email || !pass){ return alert('ای میل اور پاس ورڈ دیں'); }
+  LS.set(K.admin,{email,phone,pass});
+  document.getElementById('loginMsg').textContent='ایڈمن سیٹ ہوگیا ✅';
+}
+function login(){
+  const adm = LS.get(K.admin);
+  if(!adm){ return alert('پہلے Set Admin کریں'); }
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  if(email===adm.email && pass===adm.pass){
+    document.getElementById('posArea').style.display='block';
+    document.getElementById('loginMsg').textContent='لاگ ان کامیاب ✅';
+  } else {
+    document.getElementById('loginMsg').textContent='غلط تفصیل ❌';
+  }
+}
+
+/* ================== INVENTORY ================== */
+function getInv(){ return LS.get(K.inv) || []; }
+function setInv(arr){ LS.set(K.inv,arr); refreshInv(); }
+function addItem(){
+  const name=pName.value.trim(), bc=pBarcode.value.trim();
+  const cost=parseFloat(pCost.value)||0, price=parseFloat(pPrice.value)||0, qty=parseInt(pQty.value)||0;
+  if(!name) return alert('نام لازمی');
+  const inv=getInv();
+  const idx = inv.findIndex(x=>x.barcode===bc && bc);
+  if(idx>-1){ inv[idx].qty += qty; inv[idx].name=name; inv[idx].cost=cost; inv[idx].price=price; }
+  else inv.push({id:Date.now(),name,barcode:bc,cost,price,qty,sold:0});
+  setInv(inv);
+  pName.value=pBarcode.value=pCost.value=pPrice.value=pQty.value='';
+}
+function delItem(id){ setInv(getInv().filter(x=>x.id!==id)); }
+function refreshInv(){
+  const inv=getInv(); invBody.innerHTML='';
+  inv.forEach((it,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${it.name}</td><td>${it.barcode||'-'}</td>
+    <td>${fmt(it.cost)}</td><td>${fmt(it.price)}</td><td>${it.qty}</td>
+    <td><button class="btn btn-danger" onclick="delItem(${it.id})">حذف</button></td>`;
+    invBody.appendChild(tr);
+  });
+  document.getElementById('kpiItems').textContent = inv.length;
+}
+
+/* ================== SALES / CART ================== */
+function getCart(){ return LS.get(K.cart) || []; }
+function setCart(arr){ LS.set(K.cart,arr); renderCart(); }
+function addToCart(){
+  const q = parseInt(saleQty.value)||1;
+  const key = saleSearch.value.trim();
+  if(!key) return;
+  const inv = getInv();
+  let it = inv.find(x=>x.barcode===key) || inv.find(x=>x.name===key);
+  if(!it){ alert('آئٹم نہ ملا'); return; }
+  if(it.qty<q){ alert('اسٹاک کم ہے'); return; }
+  const cart=getCart();
+  const cix = cart.findIndex(x=>x.id===it.id);
+  if(cix>-1) cart[cix].qty += q;
+  else cart.push({id:it.id,name:it.name,barcode:it.barcode,price:it.price,cost:it.cost,qty:q});
+  setCart(cart);
+  saleSearch.value=''; saleQty.value=1;
+}
+function removeFromCart(i){
+  const cart=getCart(); cart.splice(i,1); setCart(cart);
+}
+function clearCart(){ setCart([]); updateBill(); }
+function renderCart(){
+  const cart=getCart(); cartBody.innerHTML='';
+  cart.forEach((c,i)=>{
+    const total=c.qty*c.price;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${c.name}</td><td>${c.barcode||'-'}</td>
+    <td>${fmt(c.price)}</td>
+    <td><input type="number" min="1" value="${c.qty}" style="width:80px" onchange="updateCartQty(${i},this.value)"></td>
+    <td>${fmt(total)}</td>
+    <td><button class="btn btn-danger" onclick="removeFromCart(${i})">X</button></td>`;
+    cartBody.appendChild(tr);
+  });
+  updateBill();
+}
+function updateCartQty(i,val){
+  const cart=getCart(); cart[i].qty = parseInt(val)||1; setCart(cart);
+}
+function updateBill(){
+  const cart=getCart();
+  let subtotal=0, profit=0;
+  cart.forEach(c=>{ subtotal += c.qty*c.price; profit += c.qty*(c.price - (c.cost||0)); });
+  const disc = parseFloat(discPct.value)||0;
+  const tax = parseFloat(taxPct.value)||0;
+  const afterDisc = subtotal * (1 - disc/100);
+  const grand = afterDisc * (1 + tax/100);
+  billTotal.textContent = fmt(grand);
+  billProfit.textContent = fmt(profit * (1 - disc/100)); // سادہ اندازہ
+}
+
+/* SALES SAVE */
+function getSales(){ return LS.get(K.sales) || []; }
+function setSales(arr){ LS.set(K.sales,arr); }
+function finalizeSale(){
+  const cart=getCart(); if(!cart.length) return alert('کارٹ خالی');
+  // reduce inventory
+  const inv=getInv();
+  cart.forEach(c=>{
+    const ix=inv.findIndex(x=>x.id===c.id);
+    if(ix>-1){ inv[ix].qty -= c.qty; inv[ix].sold = (inv[ix].sold||0) + c.qty; }
+  });
+  setInv(inv);
+
+  // sale record
+  const disc = parseFloat(discPct.value)||0;
+  const tax = parseFloat(taxPct.value)||0;
+  const total = parseFloat(billTotal.textContent)||0;
+  const profit = parseFloat(billProfit.textContent)||0;
+  const sale = { id:Date.now(), ts:Date.now(), items:cart, disc, tax, total, profit };
+  const sales = getSales(); sales.push(sale); setSales(sales);
+
+  // show invoice
+  renderInvoice(sale);
+  setCart([]);
+  alert('سیل محفوظ ہوگئی ✅');
+}
+
+function renderInvoice(sale){
+  const dt = new Date(sale.ts);
+  let html = `<div><b>Invoice #${sale.id}</b> — ${dt.toLocaleString('ur-PK')}</div>`;
+  html += `<table style="width:100%;border-collapse:collapse;margin-top:6px" border="1">
+  <tr><th>نام</th><th>Qty</th><th>قیمت</th><th>کل</th></tr>`;
+  sale.items.forEach(it=>{
+    html += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${fmt(it.price)}</td><td>${fmt(it.qty*it.price)}</td></tr>`;
+  });
+  html += `</table>
+  <div style="margin-top:6px">Discount: ${sale.disc}% | Tax: ${sale.tax}% | <b>Total: ${fmt(sale.total)}</b> | Profit: ${fmt(sale.profit)}</div>`;
+  invoiceContent.innerHTML = html;
+  invoiceArea.style.display='block';
+}
+function printInvoice(){
+  if(!invoiceArea.style.display || invoiceArea.style.display==='none'){ return alert('کوئی انوائس نظر نہیں آرہی'); }
+  const w=window.open('','_blank'); w.document.write('<html><body>'+invoiceContent.innerHTML+'</body></html>');
+  w.document.close(); w.focus(); w.print(); w.close();
+}
+function shareInvoiceWA(){
+  const text = invoiceContent.innerText || 'Invoice';
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+}
+
+/* REPORTS */
+function buildReport(){
+  const sales=getSales();
+  const from=repFrom.value ? new Date(repFrom.value) : new Date('1970-01-01');
+  const to=repTo.value ? new Date(repTo.value+'T23:59:59') : new Date();
+  let sum=0, prof=0, count=0;
+  const itemMap = {}; // name -> qty
+  sales.forEach(s=>{
+    const d=new Date(s.ts);
+    if(d>=from && d<=to){
+      sum+=s.total; prof+=s.profit; count++;
+      s.items.forEach(it=>{ itemMap[it.name]=(itemMap[it.name]||0)+it.qty; });
+    }
+  });
+  repSales.textContent = fmt(sum);
+  repProfit.textContent = fmt(prof);
+  repBills.textContent = count;
+
+  // hot items
+  const hot = Object.entries(itemMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  hotItems.innerHTML = hot.length? hot.map(([n,q])=>`<li>${n} — ${q}</li>`).join('') : '<li>کوئی نہیں</li>';
+
+  // dead items: in inventory but never sold
+  const inv=getInv();
+  const dead = inv.filter(x=>(x.sold||0)===0).map(x=>x.name);
+  deadItems.innerHTML = dead.length? dead.map(n=>`<li>${n}</li>`).join('') : '<li>کوئی نہیں</li>';
+}
+
+/* CUSTOMERS & SUPPLIERS */
+function getCust(){ return LS.get(K.customers) || []; }
+function setCust(a){ LS.set(K.customers,a); renderCS(); }
+function getSup(){ return LS.get(K.suppliers) || []; }
+function setSup(a){ LS.set(K.suppliers,a); renderCS(); }
+
+function addCustomer(){
+  const n=csName.value.trim(), p=csPhone.value.trim(), e=csEmail.value.trim();
+  if(!n) return alert('نام دیں');
+  const arr=getCust(); arr.push({id:Date.now(),n,p,e}); setCust(arr);
+  csName.value=csPhone.value=csEmail.value='';
+}
+function addSupplier(){
+  const n=csName.value.trim(), p=csPhone.value.trim(), e=csEmail.value.trim();
+  if(!n) return alert('نام دیں');
+  const arr=getSup(); arr.push({id:Date.now(),n,p,e}); setSup(arr);
+  csName.value=csPhone.value=csEmail.value='';
+}
+function renderCS(){
+  const C=getCust(), S=getSup();
+  custList.innerHTML = C.map(c=>`<li>${c.n} — ${c.p||''} <span class="muted">${c.e||''}</span></li>`).join('') || '<li>کوئی نہیں</li>';
+  supList.innerHTML = S.map(c=>`<li>${c.n} — ${c.p||''} <span class="muted">${c.e||''}</span></li>`).join('') || '<li>کوئی نہیں</li>';
+}
+
+/* ORDERS */
+function getOrders(){ return LS.get(K.orders) || []; }
+function setOrders(a){ LS.set(K.orders,a); renderOrders(); }
+function saveOrder(){
+  const note = orderNote.value.trim(); if(!note) return alert('آرڈر نوٹ لکھیں');
+  const arr=getOrders(); arr.push({id:Date.now(),ts:Date.now(),note}); setOrders(arr);
+  orderNote.value='';
+}
+function renderOrders(){
+  const arr=getOrders();
+  ordersList.innerHTML = arr.map(o=> `<li><b>#${o.id}</b> — ${new Date(o.ts).toLocaleString('ur-PK')} — ${o.note}</li>`).join('') || '<li>کوئی آرڈر نہیں</li>';
+}
+function printOrders(){
+  const w=window.open('','_blank'); w.document.write('<html><body><ol>'+ordersList.innerHTML+'</ol></body></html>');
+  w.document.close(); w.focus(); w.print(); w.close();
+}
+
+/* BARCODE */
+function makeBarcode(){
+  const v = bcInput.value.trim() || '1234567890123';
+  JsBarcode("#barcode", v, {format:"CODE128",width:2,height:60,displayValue:true});
+}
+
+/* EXPORT / IMPORT HELPERS */
+function exportJSON(which){
+  let data=null, name='data';
+  if(which==='inventory'){ data=getInv(); name='inventory'; }
+  if(which==='sales'){ data=getSales(); name='sales'; }
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'.json'; a.click();
+}
+function importJSON(ev,which){
+  const f=ev.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>{
+    const arr=JSON.parse(rd.result||'[]');
+    if(which==='inventory') setInv(arr);
+    if(which==='sales') setSales(arr);
+    alert('Import done');
+  }; rd.readAsText(f);
+}
+function exportCSV(which){
+  let rows=[], fname=which+'.csv';
+  if(which==='inventory'){
+    rows=[['name','barcode','cost','price','qty','sold'], ...getInv().map(x=>[x.name,x.barcode,x.cost,x.price,x.qty,x.sold||0])];
+  } else if(which==='sales'){
+    rows=[['id','ts','total','profit','items'], ...getSales().map(s=>[s.id,new Date(s.ts).toISOString(),s.total,s.profit,s.items.length])];
+  }
+  const csv = rows.map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download=fname; a.click();
+}
+
+/* BACKUP / RESTORE / WIPE */
+function backupAll(){
+  const dump={
+    [K.teachers]:LS.get(K.teachers)||defaultTeachers(),
+    [K.timetable]:LS.get(K.timetable)||defaultTT(),
+    [K.admin]:LS.get(K.admin)||null,
+    [K.inv]:getInv(), [K.sales]:getSales(),
+    [K.customers]:getCust(), [K.suppliers]:getSup(),
+    [K.orders]:getOrders()
+  };
+  const blob = new Blob([JSON.stringify(dump,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='portal-backup.json'; a.click();
+}
+function restoreAll(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      Object.keys(d).forEach(k=>LS.set(k,d[k]));
+      initAll();
+      alert('Restore done ✅');
+    }catch(e){ alert('Invalid file'); }
+  }; rd.readAsText(f);
+}
+function wipeAll(){
+  if(!confirm('تمام ڈیٹا حذف ہو جائے گا؟')) return;
+  Object.values(K).forEach(LS.del);
+  initAll();
+}
+
+/* KPI: Today Sales/Profit */
+function refreshKPIs(){
+  const sales=getSales();
+  const t = todayISO();
+  let s=0,p=0;
+  sales.forEach(x=>{
+    if(new Date(x.ts).toISOString().slice(0,10)===t){ s+=x.total; p+=x.profit; }
+  });
+  document.getElementById('kpiSalesToday').textContent=fmt(s);
+  document.getElementById('kpiProfitToday').textContent=fmt(p);
+}
+
+/* INIT */
+function initAll(){
+  renderTeachers();
+  renderTimetable();
+  refreshInv();
+  renderCart();
+  renderCS();
+  renderOrders();
+  refreshKPIs();
+  // default report range = today
+  repFrom.value = todayISO(); repTo.value = todayISO();
+}
+initAll();
+</script>
+</body>
+</html>
 
 </body>
 </html>
