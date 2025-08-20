@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سکول اور بزنس پورٹل</title>
+<style>
+body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+header, footer { background: #2e7d32; color: white; padding: 10px; text-align: center; }
+.container { padding: 20px; }
+input, button { margin: 5px 0; padding: 5px; }
+.customer { border:1px solid #ccc; padding:10px; margin:10px 0; }
+img { max-width:100px; display:block; margin-top:5px; }
+</style>
+</head>
+<body>
+<header>
+<h1>سکول اور بزنس پورٹل</h1>
+<p>رابطہ: 03419208226 | ایمیل: naqibullahshah58@gmail.com</p>
+</header>
+
+<div class="container">
+<h2>ایڈمن لاگ ان</h2>
+<input type="text" id="admin-username" placeholder="Admin Username">
+<input type="password" id="admin-password" placeholder="Admin Password">
+<button onclick="adminLogin()">لاگ ان</button>
+<p id="admin-msg" style="color:red;"></p>
+
+<hr>
+
+<h2>کسٹمر سیکشن</h2>
+<div id="customer-login-div">
+<h3>کسٹمر لاگ ان / رجسٹریشن</h3>
+<input type="text" id="cust-username" placeholder="Username">
+<input type="password" id="cust-password" placeholder="Password">
+<button onclick="customerLogin()">لاگ ان</button>
+<button onclick="customerRegister()">رجسٹر</button>
+<button onclick="forgotPassword()">Forgot Password</button>
+<p id="cust-login-msg" style="color:red;"></p>
+</div>
+
+<div id="customer-list"></div>
+</div>
+
+<footer>
+<p>© 2025 Naqib Ullah Shah</p>
+</footer>
+
+<script>
+let customers = JSON.parse(localStorage.getItem('customers') || '[]');
+
+function adminLogin(){
+    let user = document.getElementById('admin-username').value;
+    let pass = document.getElementById('admin-password').value;
+    if(user==='admin' && pass==='12345'){
+        alert('ایڈمن لاگ ان کامیاب');
+        document.getElementById('customer-login-div').style.display='block';
+        document.getElementById('admin-msg').innerText='';
+        renderCustomers();
+    } else {
+        document.getElementById('admin-msg').innerText='غلط یوزر نیم یا پاسورڈ';
+    }
+}
+
+function customerRegister(){
+    let uname = document.getElementById('cust-username').value;
+    let pass = document.getElementById('cust-password').value;
+    if(!uname || !pass){ alert('تمام فیلڈز بھریں'); return; }
+    if(customers.find(c=>c.username===uname)){ alert('یوزر پہلے سے موجود ہے'); return; }
+    customers.push({username:uname,password:pass,receipt:null,image:null});
+    localStorage.setItem('customers', JSON.stringify(customers));
+    alert('رجسٹریشن کامیاب');
+    renderCustomers();
+}
+
+function customerLogin(){
+    let uname = document.getElementById('cust-username').value;
+    let pass = document.getElementById('cust-password').value;
+    let user = customers.find(c=>c.username===uname && c.password===pass);
+    if(user){
+        alert('کسٹمر لاگ ان کامیاب');
+        renderCustomers();
+        document.getElementById('cust-login-msg').innerText='';
+    } else {
+        document.getElementById('cust-login-msg').innerText='غلط یوزر نیم یا پاسورڈ';
+    }
+}
+
+function forgotPassword(){
+    let uname = prompt('اپنا یوزر نیم درج کریں');
+    let user = customers.find(c=>c.username===uname);
+    if(!user){ alert('یوزر موجود نہیں'); return; }
+    let newPass = prompt('نیا پاسورڈ درج کریں');
+    if(newPass){
+        user.password = newPass;
+        localStorage.setItem('customers', JSON.stringify(customers));
+        alert('پاسورڈ کامیابی سے تبدیل ہوگیا');
+    }
+}
+
+function renderCustomers(){
+    let list = document.getElementById('customer-list');
+    list.innerHTML='';
+    customers.forEach((c,index)=>{
+        let div = document.createElement('div');
+        div.className='customer';
+        div.innerHTML = `
+            <strong>کسٹمر:</strong> ${c.username}<br>
+            <strong>رسید:</strong> <input type="file" accept="image/*" onchange="uploadReceipt(event,${index})"><br>
+            ${c.receipt ? '<img src="'+c.receipt+'">' : ''}
+            <strong>تصویر:</strong> <input type="file" accept="image/*" onchange="uploadImage(event,${index})"><br>
+            ${c.image ? '<img src="'+c.image+'">' : ''}
+            <button onclick="editCustomer(${index})">ایڈیٹ</button>
+            <button onclick="deleteCustomer(${index})">ڈیلیٹ</button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function uploadReceipt(event,index){
+    let reader = new FileReader();
+    reader.onload = function(){
+        customers[index].receipt = reader.result;
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderCustomers();
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+function uploadImage(event,index){
+    let reader = new FileReader();
+    reader.onload = function(){
+        customers[index].image = reader.result;
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderCustomers();
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+function editCustomer(index){
+    let newName = prompt('نیا یوزر نیم درج کریں',customers[index].username);
+    if(newName){ customers[index].username = newName; }
+    localStorage.setItem('customers', JSON.stringify(customers));
+    renderCustomers();
+}
+
+function deleteCustomer(index){
+    if(confirm('کیا آپ واقعی حذف کرنا چاہتے ہیں؟')){
+        customers.splice(index,1);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderCustomers();
+    }
+}
+</script>
+</body>
+</html>
