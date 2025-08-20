@@ -1,219 +1,178 @@
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سکول اور بزنس پورٹل - سوشل لاگ ان</title>
-    <style>
-        /* آپ کا CSS یہاں آئے گا */
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سکول اور بزنس پورٹل</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; margin:0; padding:0; }
+    header { background: #2e7d32; color: white; padding: 10px; text-align:center; }
+    section { margin: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+    h2 { color: #2e7d32; }
+    input, button { padding: 8px; margin:5px; border-radius:4px; border:1px solid #ccc;}
+    button { cursor:pointer; background:#2e7d32; color:white; border:none;}
+    button.edit { background:#388e3c; }
+    button.delete { background:#c62828; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>سکول اور بزنس پورٹل</h1>
+  <header>
+    <h1>سکول اور بزنس پورٹل</h1>
+  </header>
 
-        <!-- رجسٹریشن اور لاگ ان سیکشن -->
-        <div id="auth-section">
-            <h2>رجسٹریشن</h2>
-            <input type="text" id="reg-name" placeholder="نام" required>
-            <input type="email" id="reg-email" placeholder="ای میل" required>
-            <input type="password" id="reg-password" placeholder="پاسورڈ" required>
-            <button onclick="register()">رجسٹر کریں</button>
+  <!-- سکول سیکشن -->
+  <section id="school-section">
+    <h2>سکول سیکشن</h2>
+    <!-- یہاں سکول کا پرانا HTML سب شامل کریں -->
+    <p>یہاں سکول سیکشن کا مکمل ڈیٹا اور فیچرز موجود ہیں۔</p>
+  </section>
 
-            <h2>لاگ ان</h2>
-            <input type="email" id="login-email" placeholder="ای میل">
-            <input type="password" id="login-password" placeholder="پاسورڈ">
-            <button onclick="login()">لاگ ان</button>
-            <button onclick="showForgot()">پاسورڈ بھول گئے؟</button>
+  <!-- بزنس سیکشن -->
+  <section id="business-section">
+    <h2>بزنس سیکشن</h2>
 
-            <!-- سوشل لاگ ان بٹنز -->
-            <div id="google-signin2"></div>
-            <div id="facebook-login-button"></div>
-        </div>
-
-        <!-- پاسورڈ ری سیٹ سیکشن -->
-        <div id="forgot-section" class="hidden">
-            <h2>نیا پاسورڈ بنائیں</h2>
-            <input type="email" id="forgot-email" placeholder="ای میل">
-            <input type="password" id="forgot-new-password" placeholder="نیا پاسورڈ">
-            <button onclick="resetPassword()">ری سیٹ کریں</button>
-            <button onclick="hideForgot()">واپس لاگ ان</button>
-        </div>
-
-        <!-- بزنس سیکشن -->
-        <div id="business-section" class="hidden">
-            <h2>بزنس ڈیٹا</h2>
-            <input type="text" id="item-name" placeholder="آئٹم کا نام">
-            <input type="number" id="item-amount" placeholder="رقم">
-            <button onclick="addItem()">ایڈ کریں</button>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>آئٹم</th>
-                        <th>رقم</th>
-                        <th>عمل</th>
-                    </tr>
-                </thead>
-                <tbody id="items-table">
-                </tbody>
-            </table>
-            <button onclick="logout()">لاگ آؤٹ</button>
-        </div>
+    <!-- کسٹمر رجسٹریشن / لاگ ان -->
+    <div id="auth-section">
+      <h3>رجسٹریشن / لاگ ان</h3>
+      <input type="text" id="customer-name" placeholder="نام">
+      <input type="email" id="customer-email" placeholder="ای میل">
+      <input type="password" id="customer-password" placeholder="پاسورڈ">
+      <button onclick="registerCustomer()">رجسٹر کریں</button>
+      <button onclick="loginCustomer()">لاگ ان</button>
+      <button onclick="resetPassword()">پاسورڈ بھول گئے؟</button>
+      <p id="auth-msg" style="color:red;"></p>
     </div>
 
-    <script>
-        // لوکل اسٹوریج میں یوزرز
-        let users = JSON.parse(localStorage.getItem('users') || '[]');
-        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    <!-- گوگل لاگ ان -->
+    <div id="google-signin">
+      <h3>گوگل سے لاگ ان کریں</h3>
+      <button onclick="googleLogin()">گوگل سے لاگ ان کریں</button>
+    </div>
 
-        function saveUsers() {
-            localStorage.setItem('users', JSON.stringify(users));
+    <!-- فیس بک لاگ ان -->
+    <div id="facebook-signin">
+      <h3>فیس بک سے لاگ ان کریں</h3>
+      <button onclick="facebookLogin()">فیس بک سے لاگ ان کریں</button>
+    </div>
+
+    <!-- بزنس ڈیٹا ٹیبل -->
+    <h3>کسٹمر ڈیٹا</h3>
+    <table id="customer-table">
+      <thead>
+        <tr>
+          <th>نام</th>
+          <th>ای میل</th>
+          <th>ایڈیٹ</th>
+          <th>ڈیلیٹ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- کسٹمر ڈیٹا یہاں ظاہر ہوگا -->
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    // کسٹمر ڈیٹا اسٹور کرنے کیلئے لوکل اسٹوریج استعمال
+    let customers = JSON.parse(localStorage.getItem('customers') || '[]');
+    let loggedInCustomer = null;
+
+    function renderTable() {
+      const tbody = document.querySelector("#customer-table tbody");
+      tbody.innerHTML = '';
+      customers.forEach((c, index) => {
+        if(loggedInCustomer && c.email === loggedInCustomer.email){
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${c.name}</td>
+            <td>${c.email}</td>
+            <td><button class="edit" onclick="editCustomer(${index})">ایڈیٹ</button></td>
+            <td><button class="delete" onclick="deleteCustomer(${index})">ڈیلیٹ</button></td>
+          `;
+          tbody.appendChild(row);
         }
+      });
+    }
 
-        function register() {
-            let name = document.getElementById('reg-name').value;
-            let email = document.getElementById('reg-email').value;
-            let password = document.getElementById('reg-password').value;
+    function registerCustomer() {
+      const name = document.getElementById('customer-name').value;
+      const email = document.getElementById('customer-email').value;
+      const password = document.getElementById('customer-password').value;
 
-            if(users.find(u => u.email === email)) {
-                alert("یہ ای میل پہلے سے رجسٹر ہے!");
-                return;
-            }
+      if(!name || !email || !password){
+        document.getElementById('auth-msg').innerText = 'تمام فیلڈز پُر کریں';
+        return;
+      }
+      if(customers.find(c => c.email === email)){
+        document.getElementById('auth-msg').innerText = 'ای میل پہلے سے موجود ہے';
+        return;
+      }
+      const customer = {name, email, password};
+      customers.push(customer);
+      localStorage.setItem('customers', JSON.stringify(customers));
+      document.getElementById('auth-msg').innerText = 'رجسٹریشن کامیاب! اب لاگ ان کریں';
+    }
 
-            users.push({name, email, password, items: []});
-            saveUsers();
-            alert("رجسٹریشن مکمل!");
+    function loginCustomer() {
+      const email = document.getElementById('customer-email').value;
+      const password = document.getElementById('customer-password').value;
+
+      const customer = customers.find(c => c.email === email && c.password === password);
+      if(customer){
+        loggedInCustomer = customer;
+        document.getElementById('auth-msg').innerText = `خوش آمدید ${customer.name}`;
+        renderTable();
+      } else {
+        document.getElementById('auth-msg').innerText = 'ای میل یا پاسورڈ غلط ہے';
+      }
+    }
+
+    function resetPassword() {
+      const email = document.getElementById('customer-email').value;
+      const customer = customers.find(c => c.email === email);
+      if(customer){
+        const newPass = prompt('نیا پاسورڈ درج کریں');
+        if(newPass) {
+          customer.password = newPass;
+          localStorage.setItem('customers', JSON.stringify(customers));
+          alert('پاسورڈ کامیابی سے ری سیٹ ہو گیا');
         }
+      } else {
+        alert('ای میل موجود نہیں');
+      }
+    }
 
-        function login() {
-            let email = document.getElementById('login-email').value;
-            let password = document.getElementById('login-password').value;
-            let user = users.find(u => u.email === email && u.password === password);
-            if(user) {
-                currentUser = user;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('business-section').classList.remove('hidden');
-                renderItems();
-            } else {
-                alert("ای میل یا پاسورڈ غلط ہے");
-            }
-        }
+    function editCustomer(index) {
+      const newName = prompt('نیا نام درج کریں', customers[index].name);
+      if(newName){
+        customers[index].name = newName;
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderTable();
+      }
+    }
 
-        function logout() {
-            currentUser = null;
-            localStorage.removeItem('currentUser');
-            document.getElementById('business-section').classList.add('hidden');
-            document.getElementById('auth-section').classList.remove('hidden');
-        }
+    function deleteCustomer(index) {
+      if(confirm('کیا آپ واقعی ڈیلیٹ کرنا چاہتے ہیں؟')){
+        customers.splice(index,1);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderTable();
+      }
+    }
 
-        function renderItems() {
-            let tbody = document.getElementById('items-table');
-            tbody.innerHTML = '';
-            currentUser.items.forEach((item, index) => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.name}</td>
-                    <td>${item.amount}</td>
-                    <td>
-                        <button class="edit-btn" onclick="editItem(${index})">ایڈیٹ</button>
-                        <button class="delete-btn" onclick="deleteItem(${index})">ڈیلیٹ</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+    // صفحہ لوڈ پر ٹیبل ریڈر کریں
+    renderTable();
 
-        function addItem() {
-            let name = document.getElementById('item-name').value;
-            let amount = parseFloat(document.getElementById('item-amount').value);
-            if(!name || !amount) { alert("تمام فیلڈز پر کریں"); return; }
-            currentUser.items.push({name, amount});
-            saveCurrentUser();
-            renderItems();
-            document.getElementById('item-name').value = '';
-            document.getElementById('item-amount').value = '';
-        }
+    // گوگل لاگ ان
+    function googleLogin() {
+      // گوگل لاگ ان کا کوڈ یہاں شامل کریں
+    }
 
-        function editItem(index) {
-            let newName = prompt("نیا نام درج کریں", currentUser.items[index].name);
-            let newAmount = prompt("نئی رقم درج کریں", currentUser.items[index].amount);
-            if(newName && newAmount) {
-                currentUser.items[index] = {name: newName, amount: parseFloat(newAmount)};
-                saveCurrentUser();
-                renderItems();
-            }
-        }
-
-        function deleteItem(index) {
-            if(confirm("کیا آپ واقعی یہ ڈیلیٹ کرنا چاہتے ہیں؟")) {
-                currentUser.items.splice(index, 1);
-                saveCurrentUser();
-                renderItems();
-            }
-        }
-
-        function saveCurrentUser() {
-            users = users.map(u => u.email === currentUser.email ? currentUser : u);
-            saveUsers();
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        }
-
-        // اگر یوزر پہلے سے لاگ ان ہے
-        if(currentUser) {
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('business-section').classList.remove('hidden');
-            renderItems();
-        }
-
-        // Google لاگ ان
-        function handleCredentialResponse(response) {
-            const userObject = jwt_decode(response.credential);
-            console.log(userObject);
-            // یہاں آپ یوزر کی معلومات استعمال کر سکتے ہیں
-        }
-
-        google.accounts.id.initialize({
-            client_id: 'YOUR_GOOGLE_CLIENT_ID',
-            callback: handleCredentialResponse
-        });
-        google.accounts.id.renderButton(
-            document.getElementById("google-signin2"),
-            { theme: "outline", size: "large" }
-        );
-
-        // Facebook لاگ ان
-        window.fbAsyncInit = function() {
-            FB.init({
-                appId      : 'YOUR_FACEBOOK_APP_ID',
-                cookie     : true,
-                xfbml      : true,
-                version    : 'v13.0'
-            });
-            FB.AppEvents.logPageView();
-        };
-
-        (function(d, s, id){
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) {return;}
-            js = d.createElement(s); js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-
-        function fbLogin() {
-            FB.login(function(response) {
-                if (response.authResponse) {
-                    console.log('Welcome! Fetching your information.... ');
-                    FB.api('/me', function(response) {
-                        console.log('Good to see you, ' + response.name + '.');
-                    });
-                } else {
-                    console.log('User cancelled login or did not fully authorize.');
-                }
-            });
-        }
-    </script>
+    // فیس بک لاگ ان
+    function facebookLogin() {
+      // فیس بک لاگ ان کا کوڈ یہاں شامل کریں
+    }
+  </script>
 </body>
 </html>
