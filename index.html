@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>سکول + بزنس POS پورٹل</title>
+  <style>
+    :root{
+      --green:#2e7d32; --green-2:#388e3c; --green-dark:#1b5e20;
+      --bg:#f4f7fb; --card:#fff; --muted:#475569; --border:#e5e7eb;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Tahoma, Arial, sans-serif;background:var(--bg);color:#0f172a}
+    header{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;text-align:center;padding:20px}
+    header h1{margin:0;font-size:22px}
+    .container{max-width:1100px;margin:18px auto;padding:12px}
+    .tabs{display:flex;gap:8px;justify-content:center;margin:12px 0}
+    .tab-btn{background:#eef2ff;border:0;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700}
+    .tab-btn.active{background:#c7d2fe}
+    .panel{display:none}
+    .panel.active{display:block}
+    .card{background:var(--card);border-radius:12px;padding:12px;margin:12px 0;border:1px solid var(--border);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    h2{color:var(--green-2);margin:0 0 8px}
+    input,select,textarea,button{font-size:14px;padding:8px;border-radius:8px;border:1px solid #d1d5db;width:100%}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{padding:10px 12px;border-radius:8px;border:0;cursor:pointer}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-green{background:var(--green-2);color:#fff}
+    .btn-ghost{background:#eef2ff}
+    .muted{color:var(--muted)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border:1px solid #eee;text-align:center}
+    th{background:var(--green-2);color:#fff}
+    .teacher-card{padding:8px;text-align:center;border:1px dashed #ddd;border-radius:10px}
+    .teacher-card img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #fff;background:#fafafa}
+    footer{background:#0f172a;color:#cbd5e1;text-align:center;padding:12px;margin-top:18px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+<header>
+  <h1>📚 سکول + 💼 بزنس POS پورٹل</h1>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="school">سکول</button>
+    <button class="tab-btn" data-tab="business">بزنس / POS</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- SCHOOL PANEL -->
+  <section id="school" class="panel active">
+    <div class="card">
+      <h2>👩‍🏫 اساتذہ (ایڈیٹیبل — 8)</h2>
+      <div id="teachersGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px"></div>
+      <div style="text-align:center;margin-top:10px">
+        <button class="btn btn-green" onclick="saveTeachers()">اساتذہ محفوظ کریں</button>
+        <button class="btn btn-ghost" onclick="resetTeachers()">ڈیفالٹ بحال</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📅 ٹائم ٹیبل (پیر → ہفتہ — 8 پیریڈز)</h2>
+      <div style="overflow:auto">
+        <table id="ttTable" aria-label="Timetable">
+          <thead><tr><th>دن</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead>
+          <tbody id="ttBody"></tbody>
+        </table>
+      </div>
+      <div style="text-align:center;margin-top:10px">
+        <button class="btn btn-green" onclick="saveTimetable()">محفوظ</button>
+        <button class="btn btn-primary" onclick="downloadTTasPDF()">PDF ڈاؤن لوڈ</button>
+        <button class="btn btn-ghost" onclick="shareTTWhatsApp()">WhatsApp شیئر</button>
+        <button class="btn btn-ghost" onclick="resetTimetable()">ڈیفالٹ بحال</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUSINESS PANEL -->
+  <section id="business" class="panel">
+    <div class="card">
+      <h2>🔐 رسائی (ایڈمن / کسٹمر)</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+        <!-- Admin login -->
+        <div>
+          <label>ایڈمن ای میل</label>
+          <input id="adminEmail" placeholder="ایڈمن ای میل">
+        </div>
+        <div>
+          <label>ایڈمن پاس ورڈ</label>
+          <input id="adminPass" type="password" placeholder="پاس ورڈ">
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn btn-primary" id="btnAdminLogin">ایڈمن لاگ اِن</button>
+        </div>
+
+        <!-- Customer signup/login -->
+        <div>
+          <label>کسٹمر نام</label>
+          <input id="custName" placeholder="نام (رجسٹر)">
+        </div>
+        <div>
+          <label>کسٹمر ای میل</label>
+          <input id="custEmail" placeholder="ای میل">
+        </div>
+        <div>
+          <label>فون</label>
+          <input id="custPhone" placeholder="03xxxxxxxxx">
+        </div>
+        <div>
+          <label>پاس ورڈ</label>
+          <input id="custPass" type="password" placeholder="پاس ورڈ">
+        </div>
+
+        <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-green" id="btnCustSignup">رجسٹریشن</button>
+          <button class="btn btn-ghost" id="btnCustLogin">لاگ اِن</button>
+          <button class="btn btn-amber" id="btnCustReset">Forgot Password</button>
+          <button class="btn btn-danger" id="btnLogout" style="margin-left:auto">لاگ آؤٹ</button>
+        </div>
+        <div style="grid-column:1/-1"><span id="authMsg" class="muted"></span></div>
+      </div>
+    </div>
+
+    <!-- POS area (shown after login) -->
+    <div id="posArea" class="hidden">
+      <!-- Inventory -->
+      <div class="card">
+        <h2>📦 Inventory</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
+          <input id="pName" placeholder="نام">
+          <input id="pBarcode" placeholder="بارکوڈ">
+          <input id="pCost" placeholder="لاگت" type="number" step="0.01">
+          <input id="pPrice" placeholder="قیمت" type="number" step="0.01">
+          <input id="pQty" placeholder="Qty" type="number" value="1">
+          <div><button class="btn btn-green" id="btnAddItem">شامل کریں</button></div>
+        </div>
+        <div style="margin-top:10px;overflow:auto">
+          <table><thead><tr><th>#</th><th>نام</th><th>بارکوڈ</th><th>لاگت</th><th>قیمت</th><th>Qty</th><th>حذف</th></tr></thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sales -->
+      <div class="card">
+        <h2>🧾 Sales / کارٹ</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+          <input id="saleSearch" placeholder="بارکوڈ یا نام">
+          <input id="saleQty" placeholder="Qty" type="number" value="1">
+          <div><button class="btn btn-green" id="btnAddToCart">کارٹ میں شامل</button></div>
+        </div>
+        <div style="margin-top:8px;overflow:auto">
+          <table><thead><tr><th>#</th><th>نام</th><th>بارکوڈ</th><th>قیمت</th><th>Qty</th><th>کل</th><th>حذف</th></tr></thead>
+            <tbody id="cartBody"></tbody>
+          </table>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px">
+          <input id="discPct" placeholder="Discount %" type="number" value="0">
+          <input id="taxPct" placeholder="Tax %" type="number" value="0">
+          <div class="kpi" style="padding:8px;text-align:center"><b>Bill</b><div id="billTotal">0</div></div>
+          <div class="kpi" style="padding:8px;text-align:center"><b>Profit</b><div id="billProfit">0</div></div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnFinalize">Finalize/Save</button>
+          <button class="btn btn-amber" id="btnPrint">Print/PDF</button>
+          <button class="btn btn-ghost" id="btnShareWA">WhatsApp Share</button>
+          <button class="btn btn-danger" id="btnClearCart">Clear Cart</button>
+        </div>
+
+        <div id="invoiceArea" class="card hidden" style="margin-top:10px">
+          <h3>رسید</h3>
+          <div id="invoiceContent"></div>
+          <div style="margin-top:8px">
+            <label>Receipt/Photo: <input type="file" id="receiptFile" accept="image/*,application/pdf"></label>
+            <button class="btn btn-green" id="btnUploadReceipt">Upload & Link</button>
+            <span id="uploadMsg" class="muted"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports -->
+      <div class="card">
+        <h2>📈 Reports</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <input type="date" id="repFrom">
+          <input type="date" id="repTo">
+          <div><button class="btn btn-green" id="btnReport">Build</button></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <div class="kpi" style="flex:1;padding:8px;text-align:center"><b>Total Sales</b><div id="repSales">0</div></div>
+          <div class="kpi" style="flex:1;padding:8px;text-align:center"><b>Total Profit</b><div id="repProfit">0</div></div>
+          <div class="kpi" style="flex:1;padding:8px;text-align:center"><b>Bills</b><div id="repBills">0</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin area (visible for admins) -->
+    <div id="adminArea" class="hidden">
+      <div class="card">
+        <h2>👥 Admin - All Customers</h2>
+        <div id="allCustomers"></div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<footer>
+  © 2025 — سکول + بزنس POS — رابطہ: <a href="https://wa.me/923419208226" target="_blank" style="color:#93c5fd">0341-9208226</a>
+</footer>
+
+<!-- libs for PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- Firebase (module) + app config (آپ کا) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
+
+  // ---------- your firebaseConfig (you provided earlier) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyAw2ZPLzq-RwDWRUZZScweGqHi269RUMWc",
+    authDomain: "business-pos-c6655.firebaseapp.com",
+    projectId: "business-pos-c6655",
+    storageBucket: "business-pos-c6655.firebasestorage.app",
+    messagingSenderId: "116885935215",
+    appId: "1:116885935215:web:c26a3c4b92c6a8c91d299a",
+    measurementId: "G-6DYKQ4KRKN"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.onclick=()=>{
+      document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active');
+    };
+  });
+
+  // ---------- SCHOOL (LocalStorage) ----------
+  const LS = {
+    get:k=>{ try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null }},
+    set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+  };
+  const K = { teachers:'sch_teachers', timetable:'sch_timetable' };
+
+  const defaultTeachers = ()=> Array.from({length:8},(_,i)=>({name:`استاد ${i+1}`, img:null}));
+  function renderTeachers(){
+    const t = LS.get(K.teachers) || defaultTeachers();
+    const grid = document.getElementById('teachersGrid'); grid.innerHTML='';
+    t.forEach((tc,i)=>{
+      const d = document.createElement('div'); d.className='teacher-card';
+      d.innerHTML = `<img id="timg${i}" src="${tc.img||'https://cdn-icons-png.flaticon.com/512/201/201818.png'}"><input id="tname${i}" value="${tc.name}"><input type="file" accept="image/*" onchange="onTeacherImg(${i},event)">`;
+      grid.appendChild(d);
+    });
+  }
+  window.onTeacherImg = (i,ev)=>{ const f=ev.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=> document.getElementById('timg'+i).src = rd.result; rd.readAsDataURL(f); }
+  window.saveTeachers = ()=>{ const arr=[]; for(let i=0;i<8;i++){ arr.push({name:document.getElementById('tname'+i).value||('استاد '+(i+1)), img:document.getElementById('timg'+i).src}); } LS.set(K.teachers,arr); alert('اساتذہ محفوظ ✅'); }
+  window.resetTeachers = ()=>{ LS.set(K.teachers, defaultTeachers()); renderTeachers(); }
+
+  const days = ['پیر','منگل','بدھ','جمعرات','جمعہ','ہفتہ'];
+  const defaultTT = ()=>{ const o={}; days.forEach(d=>o[d]=Array.from({length:8},(_,i)=>`مضمون ${i+1}`)); return o; }
+  function renderTimetable(){
+    const tt = LS.get(K.timetable) || defaultTT();
+    const tb = document.getElementById('ttBody'); tb.innerHTML='';
+    days.forEach(d=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td><b>${d}</b></td>` + tt[d].map((s,i)=>`<td contenteditable data-day="${d}" data-idx="${i}">${s}</td>`).join('');
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('td[contenteditable]').forEach(td=>{
+      td.addEventListener('input',()=>{
+        const d=td.dataset.day, i=td.dataset.idx;
+        const obj = LS.get(K.timetable) || defaultTT();
+        obj[d][i] = td.textContent.trim(); LS.set(K.timetable,obj);
+      });
+    });
+  }
+  window.saveTimetable = ()=> alert('ٹائم ٹیبل خودکار محفوظ ہوتا ہے ✅');
+  window.resetTimetable = ()=>{ LS.set(K.timetable, defaultTT()); renderTimetable(); }
+  window.downloadTTasPDF = async ()=>{
+    const { jsPDF } = window.jspdf; const node=document.getElementById('ttTable');
+    const canvas = await html2canvas(node,{scale:2}); const img = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p','mm','a4'); const pageW = pdf.internal.pageSize.getWidth(); const ratio = canvas.width/canvas.height;
+    const w = pageW - 20; const h = w * (canvas.height/canvas.width);
+    pdf.addImage(img,'PNG',10,10,w,h); pdf.save('timetable.pdf');
+  }
+  window.shareTTWhatsApp = ()=> window.open('https://wa.me/?text='+encodeURIComponent('ہمارا اسکول ٹائم ٹیبل: '+location.href),'_blank');
+
+  renderTeachers(); renderTimetable();
+
+  // ---------- AUTH & FIRESTORE logic ----------
+  const adminLoginBtn = document.getElementById('btnAdminLogin');
+  const custSignupBtn = document.getElementById('btnCustSignup');
+  const custLoginBtn = document.getElementById('btnCustLogin');
+  const custResetBtn = document.getElementById('btnCustReset');
+  const logoutBtn = document.getElementById('btnLogout');
+  const authMsg = document.getElementById('authMsg');
+  const posArea = document.getElementById('posArea');
+  const adminArea = document.getElementById('adminArea');
+
+  // helper: show/hide pos/admin areas
+  function showPosFor(role){
+    posArea.classList.remove('hidden');
+    if(role==='admin'){ adminArea.classList.remove('hidden'); } else { adminArea.classList.add('hidden'); }
+  }
+
+  // Admin login: sign-in via Firebase Auth (admin account should exist)
+  adminLoginBtn.onclick = async ()=>{
+    const email = document.getElementById('adminEmail').value.trim();
+    const pass  = document.getElementById('adminPass').value;
+    try{
+      await signInWithEmailAndPassword(auth, email, pass);
+      authMsg.textContent = 'Admin logged in';
+    }catch(e){ authMsg.textContent = 'Admin login failed: '+e.message; }
+  };
+
+  // Customer signup
+  custSignupBtn.onclick = async ()=>{
+    const name = document.getElementById('custName').value.trim();
+    const email = document.getElementById('custEmail').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const pass = document.getElementById('custPass').value;
+    if(!email||!pass) return authMsg.textContent='Email and password required';
+    try{
+      const cred = await createUserWithEmailAndPassword(auth,email,pass);
+      // create user doc
+      await setDoc(doc(db,'users',cred.user.uid),{role:'customer', name:name||'Customer', phone:phone||'', email:email, createdAt:new Date()});
+      authMsg.textContent='Registered ✅';
+    }catch(e){ authMsg.textContent='Signup error: '+e.message; }
+  };
+
+  // Customer login
+  custLoginBtn.onclick = async ()=>{
+    const email = document.getElementById('custEmail').value.trim();
+    const pass = document.getElementById('custPass').value;
+    try{
+      const cred = await signInWithEmailAndPassword(auth,email,pass);
+      authMsg.textContent='Customer logged in';
+    }catch(e){ authMsg.textContent='Login failed: '+e.message; }
+  };
+
+  // Forgot password
+  custResetBtn.onclick = async ()=>{
+    const email = document.getElementById('custEmail').value.trim() || document.getElementById('adminEmail').value.trim();
+    if(!email) return authMsg.textContent='Enter email for reset';
+    try{ await sendPasswordResetEmail(auth,email); authMsg.textContent='Reset email sent ✅'; }
+    catch(e){ authMsg.textContent='Reset error: '+e.message; }
+  };
+
+  // Logout
+  logoutBtn.onclick = ()=> signOut(auth);
+
+  // When auth state changes
+  onAuthStateChanged(auth, async user=>{
+    if(!user){
+      authMsg.textContent='Not logged in';
+      posArea.classList.add('hidden'); adminArea.classList.add('hidden');
+      return;
+    }
+    // get user doc to know role
+    const ud = await getDoc(doc(db,'users',user.uid));
+    const role = (ud.exists() && ud.data().role) ? ud.data().role : 'customer';
+    authMsg.textContent = `Logged in: ${user.email} — role: ${role}`;
+    showPosFor(role);
+    // load inventory & sales for their account
+    await refreshInv();
+    renderCart();
+    initReportDates();
+    if(role==='admin'){ loadAllCustomers(); }
+  });
+
+  // ---------- Inventory functions (per-user in Firestore) ----------
+  const invBody = document.getElementById('invBody');
+  document.getElementById('btnAddItem').onclick = async ()=>{
+    if(!auth.currentUser) return alert('Please login');
+    const name = pName.value.trim(); if(!name) return alert('Name required');
+    await addDoc(collection(db,'users',auth.currentUser.uid,'inventory'),{
+      name, barcode:pBarcode.value.trim(), cost:parseFloat(pCost.value)||0, price:parseFloat(pPrice.value)||0, qty:parseInt(pQty.value)||0, sold:0, createdAt:new Date()
+    });
+    pName.value=pBarcode.value=pCost.value=pPrice.value=''; pQty.value=1;
+    await refreshInv();
+  };
+
+  async function refreshInv(){
+    invBody.innerHTML=''; document.getElementById('kpiItems').textContent='0';
+    if(!auth.currentUser) return;
+    const snap = await getDocs(query(collection(db,'users',auth.currentUser.uid,'inventory'), orderBy('createdAt','desc')));
+    const items = []; snap.forEach(s=>items.push({id:s.id,...s.data()}));
+    items.forEach((it,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML=`<td>${i+1}</td><td>${it.name}</td><td>${it.barcode||'-'}</td><td>${(it.cost||0).toFixed(2)}</td><td>${(it.price||0).toFixed(2)}</td><td>${it.qty||0}</td>
+        <td><button class="btn btn-danger" onclick="delItem('${it.id}')">X</button></td>`;
+      invBody.appendChild(tr);
+    });
+    document.getElementById('kpiItems').textContent = items.length;
+  }
+  window.delItem = async (id)=>{ if(!confirm('حذف کریں؟')) return; await deleteDoc(doc(db,'users',auth.currentUser.uid,'inventory',id)); await refreshInv(); };
+
+  // ---------- Cart / Sales (local cart, then save sale in user's sales collection) ----------
+  const cartBody = document.getElementById('cartBody');
+  let cart = [];
+  document.getElementById('btnAddToCart').onclick = async ()=>{
+    if(!auth.currentUser) return alert('Please login');
+    const key = saleSearch.value.trim(); const q = parseInt(saleQty.value)||1;
+    if(!key) return alert('Enter barcode or name');
+    // find item
+    const snap = await getDocs(collection(db,'users',auth.currentUser.uid,'inventory'));
+    let found = null;
+    snap.forEach(d=>{ const x=d.data(); if(x.barcode===key || x.name===key) found={id:d.id,...x}; });
+    if(!found) return alert('Item not found');
+    if(found.qty < q) return alert('Not enough stock');
+    const idx = cart.findIndex(c=>c.id===found.id);
+    if(idx>-1) cart[idx].qty += q; else cart.push({id:found.id,name:found.name,barcode:found.barcode,price:found.price,cost:found.cost,qty:q});
+    saleSearch.value=''; saleQty.value=1; renderCart();
+  };
+
+  function renderCart(){
+    cartBody.innerHTML=''; let subtotal=0,profit=0;
+    cart.forEach((c,i)=>{ const line = c.qty * c.price; subtotal+=line; profit += c.qty*(c.price-(c.cost||0));
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${i+1}</td><td>${c.name}</td><td>${c.barcode||'-'}</td><td>${(c.price||0).toFixed(2)}</td><td><input type="number" value="${c.qty}" onchange="updateCartQty(${i},this.value)" style="width:80px"></td><td>${line.toFixed(2)}</td><td><button class="btn btn-danger" onclick="removeFromCart(${i})">X</button></td>`;
+      cartBody.appendChild(tr);
+    });
+    const disc = parseFloat(discPct.value)||0, tax=parseFloat(taxPct.value)||0;
+    const afterDisc = subtotal * (1 - disc/100); const grand = afterDisc * (1 + tax/100);
+    billTotal.textContent = grand.toFixed(2); billProfit.textContent = (profit*(1-disc/100)).toFixed(2);
+  }
+  window.updateCartQty = (i,v)=>{ cart[i].qty = parseInt(v)||1; renderCart(); }
+  window.removeFromCart = (i)=>{ cart.splice(i,1); renderCart(); }
+  document.getElementById('btnClearCart').onclick = ()=>{ cart=[]; renderCart(); }
+
+  // finalize sale
+  document.getElementById('btnFinalize').onclick = async ()=>{
+    if(!auth.currentUser) return alert('Login required');
+    if(cart.length===0) return alert('Cart empty');
+    // update inventory
+    for(const c of cart){
+      const iref = doc(db,'users',auth.currentUser.uid,'inventory',c.id);
+      const snapshot = await getDoc(iref);
+      if(snapshot.exists()){
+        const data = snapshot.data();
+        await updateDoc(iref,{ qty: Math.max(0,(data.qty||0)-c.qty), sold: (data.sold||0)+c.qty });
+      }
+    }
+    // save sale
+    const sale = { createdAt:new Date(), items:cart, disc:parseFloat(discPct.value)||0, tax:parseFloat(taxPct.value)||0, total:parseFloat(billTotal.textContent)||0, profit:parseFloat(billProfit.textContent)||0 };
+    const sref = await addDoc(collection(db,'users',auth.currentUser.uid,'sales'), sale);
+    renderInvoice({id:sref.id,...sale});
+    cart=[]; renderCart(); alert('Sale saved ✅');
+  };
+
+  function renderInvoice(sale){
+    const dt = new Date();
+    let html = `<div><b>Invoice #${sale.id}</b> — ${dt.toLocaleString()}</div>`;
+    html += `<table style="width:100%;border-collapse:collapse;margin-top:6px" border="1"><tr><th>نام</th><th>Qty</th><th>قیمت</th><th>کل</th></tr>`;
+    sale.items.forEach(it=> html+=`<tr><td>${it.name}</td><td>${it.qty}</td><td>${(it.price||0).toFixed(2)}</td><td>${(it.price*it.qty).toFixed(2)}</td></tr>`);
+    html += `</table><div style="margin-top:6px">Discount: ${sale.disc}% | Tax: ${sale.tax}% | <b>Total: ${(sale.total||0).toFixed(2)}</b></div>`;
+    document.getElementById('invoiceContent').innerHTML = html;
+    document.getElementById('invoiceArea').classList.remove('hidden');
+  }
+
+  document.getElementById('btnPrint').onclick = ()=>{ const area=document.getElementById('invoiceContent'); if(!area.innerHTML) return alert('No invoice'); const w=window.open('','_blank'); w.document.write('<html><body>'+area.innerHTML+'</body></html>'); w.document.close(); w.print(); w.close(); }
+  document.getElementById('btnShareWA').onclick = ()=>{ const text = document.getElementById('invoiceContent').innerText || ''; window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank'); }
+
+  // Upload receipt
+  document.getElementById('btnUploadReceipt').onclick = async ()=>{
+    if(!auth.currentUser) return alert('Login required');
+    const f = document.getElementById('receiptFile').files[0]; if(!f) return alert('Select file');
+    const rref = ref(storage, `${auth.currentUser.uid}/receipts/${Date.now()}_${f.name}`);
+    await uploadBytes(rref,f); const url = await getDownloadURL(rref);
+    document.getElementById('uploadMsg').innerHTML = `Uploaded: <a href="${url}" target="_blank">Open</a>`;
+  };
+
+  // Reports
+  document.getElementById('btnReport').onclick = async ()=>{
+    if(!auth.currentUser) return alert('Login required');
+    const from = (repFrom.value) ? new Date(repFrom.value+'T00:00:00') : new Date('1970-01-01');
+    const to = (repTo.value) ? new Date(repTo.value+'T23:59:59') : new Date();
+    let sum=0,prof=0,count=0;
+    const snap = await getDocs(collection(db,'users',auth.currentUser.uid,'sales'));
+    snap.forEach(s=>{ const x=s.data(); const d = x.createdAt.toDate(); if(d>=from && d<=to){ sum+=x.total||0; prof+=x.profit||0; count++; }});
+    repSales.textContent = (sum||0).toFixed(2); repProfit.textContent = (prof||0).toFixed(2); repBills.textContent = count;
+  };
+
+  // Admin: list all customers
+  async function loadAllCustomers(){
+    const snap = await getDocs(collection(db,'customers'));
+    let html = '';
+    snap.forEach(d=>{
+      const u = d.data();
+      html += `<div style="border:1px solid #eee;padding:8px;margin:6px;border-radius:6px;"><b>${u.email||''}</b><div>${u.data||''}</div>${u.imgURL?`<img src="${u.imgURL}" style="max-width:120px">`:""}<div style="margin-top:6px"><button class="btn btn-danger" onclick="adminDeleteCustomer('${d.id}')">حذف</button></div></div>`;
+    });
+    document.getElementById('allCustomers').innerHTML = html;
+  }
+  window.loadAllCustomers = loadAllCustomers;
+
+  window.adminDeleteCustomer = async (id)=>{
+    if(!confirm('Delete this customer?')) return;
+    await deleteDoc(doc(db,'customers',id));
+    await loadAllCustomers();
+  };
+
+  // If admin wants to store customers under top-level 'customers' (for admin listing)
+  // We also keep per-user data under users/{uid}/...
+  // When a customer registers we wrote to users/{uid}. Optionally also add to top-level customers
+  // Let's listen to signups: (we cannot listen server-side here; after signup we also set top-level doc)
+  // (Handled in signup below)
+
+  // ---------- Signup override to also register top-level customers collection ----------
+  // We adjust the signup used earlier to also add a top-level 'customers' doc
+  // (We will override the earlier button handler by reassigning)
+  // Re-assign to ensure after module load the elements exist:
+  document.getElementById('btnCustSignup').onclick = async ()=>{
+    const name = document.getElementById('custName').value.trim();
+    const email = document.getElementById('custEmail').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const pass = document.getElementById('custPass').value;
+    if(!email||!pass) return authMsg.textContent='Email & password required';
+    try{
+      const cred = await createUserWithEmailAndPassword(auth,email,pass);
+      // create per-user doc
+      await setDoc(doc(db,'users',cred.user.uid),{role:'customer', name:name||'Customer', phone:phone||'', email});
+      // also create top-level customers doc for admin listing (id = uid)
+      await setDoc(doc(db,'customers',cred.user.uid),{name:name||'Customer', email, phone, createdAt:new Date()});
+      authMsg.textContent='Registered ✅';
+    }catch(e){ authMsg.textContent='Signup error: '+e.message; }
+  };
+
+  // Customer login override (to set UI)
+  document.getElementById('btnCustLogin').onclick = async ()=>{
+    const email = document.getElementById('custEmail').value.trim();
+    const pass = document.getElementById('custPass').value;
+    try{
+      const cred = await signInWithEmailAndPassword(auth,email,pass);
+      authMsg.textContent='Logged in ✅';
+    }catch(e){ authMsg.textContent='Login error: '+e.message; }
+  };
+
+  // Load my data helper (for customer)
+  async function loadMyCustomerData(){
+    if(!auth.currentUser) return;
+    // prefer users/{uid} doc
+    const snap = await getDoc(doc(db,'users',auth.currentUser.uid));
+    if(snap.exists()){
+      const d = snap.data();
+      let html = `<p><b>${d.name||''}</b> — ${d.email||''}</p>`;
+      if(d.imgURL) html += `<img src="${d.imgURL}" style="max-width:200px">`;
+      document.getElementById('myData').innerHTML = html;
+    } else {
+      document.getElementById('myData').innerHTML = '<p>No data</p>';
+    }
+  }
+  window.loadMyData = loadMyCustomerData;
+
+  // Save customer data (also update top-level customers doc)
+  async function saveCustomerData(){
+    if(!auth.currentUser) return alert('Login required');
+    const uid = auth.currentUser.uid;
+    const data = document.getElementById('custData').value;
+    const file = document.getElementById('custImage').files[0];
+    let imgURL = '';
+    if(file){
+      const r = ref(storage, `customers/${uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(r,file);
+      imgURL = await getDownloadURL(r);
+    }
+    await setDoc(doc(db,'users',uid),{data, imgURL, email:auth.currentUser.email},{merge:true});
+    // update top-level for admin listing
+    await setDoc(doc(db,'customers',uid),{data, imgURL, email:auth.currentUser.email},{merge:true});
+    await loadMyCustomerData();
+  }
+  window.saveCustomerData = saveCustomerData;
+
+  // init helpers for report dates
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function initReportDates(){ repFrom.value=todayISO(); repTo.value=todayISO(); }
+  initReportDates();
+
+  // refresh KPIs (basic)
+  async function refreshKPIs(){
+    if(!auth.currentUser) return;
+    let s=0,p=0; const snap = await getDocs(collection(db,'users',auth.currentUser.uid,'sales'));
+    snap.forEach(d=>{ const x=d.data(); const iso = x.createdAt.toDate().toISOString().slice(0,10); if(iso===todayISO()){ s+=x.total||0; p+=x.profit||0; }});
+    document.getElementById('kpiSalesToday').textContent = (s||0).toFixed(2);
+    document.getElementById('kpiProfitToday').textContent = (p||0).toFixed(2);
+  }
+
+  // initial no-op (some elements used earlier defined)
+  window.refreshInv = refreshInv;
+  window.renderCart = renderCart;
+  window.initReportDates = initReportDates;
+
+</script>
+</body>
+</html>
